@@ -1,0 +1,110 @@
+/* Stil general */
+body {
+    background-color: #f3ead8;
+    font-family: "Arial", sans-serif;
+    margin: 0;
+    padding: 0;
+   
+  }
+  
+  /* Container principal */
+  .welcome-container {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    height: 100vh;
+    background-size: cover;
+    background-position: center;
+    background-repeat: no-repeat;
+    
+  }
+  
+  /* Conținut central */
+  .welcome-content {
+    text-align: center;
+    background: #fdf6e3;
+    padding: 30px;
+    border-radius: 12px;
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+    max-width: 700px;
+    border: 2px solid #c4a484;
+    
+  }
+  
+  /* Titlul */
+  .welcome-title {
+    font-size: 28px;
+    font-weight: bold;
+    color: #4a3f35;
+    margin-bottom: 10px;
+  }
+  
+  /* Text */
+  .welcome-text {
+    font-size: 16px;
+    color: #4a3f35;
+    margin-bottom: 20px;
+  }
+  
+  /* Imagine */
+  .welcome-image {
+    width: 80%;
+    max-width: 300px;
+    margin-bottom: 20px;
+    -webkit-transform: scaleX(-1);
+  transform: scaleX(-1);
+  }
+  
+  /* Container pentru butoane */
+  .button-container {
+    display: flex;
+    justify-content: center;
+    gap: 15px;
+  }
+  
+  /* Buton Conectare */
+  .go-to-login-button {
+    background: #71542e;
+    border-color: #0c0906;
+    color: white;
+    width: 50%;
+    padding: 10px 20px;
+    border: 7px;
+    border-radius: 8px;
+    font-size: 16px;
+    font-weight: bold;
+    cursor: pointer;
+    transition: background 0.3s;
+    transition: all 1s ease;
+  }
+  
+  .go-to-login-button:hover {
+    background: #efb540;
+    width: 60%;
+    
+    transition: all 1s ease;
+    transition: scale(1.2);
+  }
+  
+  /* Buton Înregistrare */
+  .go-to-register-button {
+    background: #2c1d09;
+    color: white;
+    width: 30%;
+    padding: 10px 20px;
+    border: none;
+    border-radius: 8px;
+    font-size: 16px;
+    font-weight: bold;
+    cursor: pointer;
+    transition: background 0.3s;
+    transition: all 1s ease;
+  }
+  
+  .go-to-register-button:hover {
+    width: 40%;
+    
+    transition: all 1s ease;
+    background: #efb540;
+  }
+  

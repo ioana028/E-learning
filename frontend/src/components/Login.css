@@ -1,0 +1,90 @@
+
+
+.loginWraper{
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    height: 100vh; /* Full screen height */
+  gap: 10px;
+}
+
+.plant1{
+    width: 120px; /* Adjust the size */
+    height: auto; /* Maintain aspect ratio */
+    margin-top: 130px; 
+  }
+  .plant2{
+    width: 120px; /* Adjust the size */
+    height: auto; /* Maintain aspect ratio */
+    margin-top: 185px; 
+  }
+  
+  
+  /* Container principal */
+  .login-container {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    height: 100vh;
+  }
+  
+  /* Cardul de login */
+  .login-card {
+    background-color: #fdf6e3;
+    padding: 30px;
+    border-radius: 12px;
+    box-shadow: 5px 5px 15px rgba(0, 0, 0, 0.1);
+    border: 2px solid #c4a484;
+    width: 350px;
+    text-align: center;
+  }
+  
+  /* Titlul */
+  .login-title {
+    font-size: 24px;
+    color: #4a3f35;
+    font-weight: bold;
+    margin-bottom: 20px;
+  }
+  
+  /* Input-uri */
+  .login-input {
+    width: 100%;
+    padding: 10px;
+    margin-bottom: 15px;
+    border: 1px solid #c4a484;
+    border-radius: 8px;
+    background-color: #fff9ec;
+    color: #4a3f35;
+    font-size: 16px;
+  }
+  
+  .login-input::placeholder {
+    color: #8b7765;
+  }
+  
+  /* Buton */
+  .login-button {
+    width: 100%;
+    padding: 10px;
+    background-color: #c4a484;
+    color: #fff9ec;
+    border: none;
+    border-radius: 8px;
+    font-size: 16px;
+    font-weight: bold;
+    cursor: pointer;
+    transition: background 0.3s;
+  }
+  
+  .login-button:hover {
+    background-color: #a88d6f;
+  }
+  
+  /* Mesaj de eroare */
+  .login-error {
+    color: red;
+    font-size: 14px;
+    margin-bottom: 10px;
+  }
+  

@@ -1,0 +1,89 @@
+import React, { useEffect, useState } from "react";
+import { useParams } from "react-router-dom";
+import { motion } from "framer-motion";
+import axios from "axios";
+import "./Lectii.css"; // Importă stilurile externe
+
+const userId = 1; // Change this to the logged-in user’s ID dynamically
+
+const Lectii = () => {
+  const { chapterId } = useParams(); // Get chapterId from URL
+  const [lessons, setLessons] = useState([]);
+  const [selectedLesson, setSelectedLesson] = useState(null);
+
+  // Fetch lessons from backend
+  useEffect(() => {
+    const fetchLessons = async () => {
+      try {
+        const response = await axios.get(`http://localhost:5000/lectii/${chapterId}/${userId}`);
+        console.log("Response from backend:", response.data); // ✅ Check received data
+        if (response.data.success) {
+          setLessons(response.data.lessons);
+        }
+      } catch (error) {
+        console.error("Error fetching lessons:", error);
+      }
+    };
+
+    fetchLessons();
+  }, [chapterId]);
+
+  return (
+    <div className="dashboard-container">
+      <aside className="sidebar">
+        <h2 className="sidebar-title">E-Learning</h2>
+        <ul className="sidebar-menu">
+          <li>📚 Lecții</li>
+          <li>🎯 Exersare</li>
+          <li>🏆 Clasament</li>
+          <li>🛍 Magazin</li>
+          <li>⚙️ Setări</li>
+        </ul>
+      </aside>
+      
+      <main className="dashboard-content">
+        <div className="progress-container">
+          <h1 className="progress-title">Progresul Tău</h1>
+          <div className="lesson-list">
+            {lessons.length > 0 ? (
+              lessons.map((lesson, index) => (
+                <div key={lesson.id} className="lesson-wrapper">
+                  {index !== 0 && <div className="lesson-connector"></div>}
+                  <motion.button
+                    whileHover={{ scale: 1.1 }}
+                    whileTap={{ scale: 0.95 }}
+                    className={`lesson-item ${lesson.completed ? "" : "not-completed"}`}
+                    onClick={() =>
+                      setSelectedLesson(selectedLesson === lesson.id ? null : lesson.id)
+                    }
+                  >
+                    {lesson.completed ? "✔" : "📖"}
+                  </motion.button>
+                  <p className="lesson-title">{lesson.title}</p>
+
+                  {/* Popover-ul care apare la click */}
+                  {selectedLesson === lesson.id && (
+                    <motion.div
+                      className="lesson-popover"
+                      initial={{ opacity: 0, scale: 0.8 }}
+                      animate={{ opacity: 1, scale: 1 }}
+                      exit={{ opacity: 0, scale: 0.8 }}
+                    >
+                      <h3>{lesson.title}</h3>
+                      <p>{`Lecția ${lesson.id} din ${lessons.length}`}</p>
+                      <button className="start-button">ÎNCEPE +10XP</button>
+                    </motion.div>
+                  )}
+                </div>
+              ))
+            ) : (
+              <p>Se încarcă lecțiile...</p>
+            )}
+          </div>
+        </div>
+      </main>
+    </div>
+  );
+};
+
+export default Lectii;

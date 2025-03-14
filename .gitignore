@@ -1,0 +1,21 @@
+# Excludere fișiere generate de Visual Studio
+bin/
+obj/
+.vs/
+.vscode/
+*.exe
+*.dll
+*.pdb
+*.user
+*.suo
+*.log
+*.cache
+*.tmp
+
+# Excludere pachete și dependințe
+packages/
+node_modules/
+
+# Excludere fișiere de build
+*.csproj.user
+*.sln.cache

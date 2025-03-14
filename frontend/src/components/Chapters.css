@@ -1,0 +1,131 @@
+/* Stil general */
+body {
+    background-color: #f3ead8;
+    font-family: "Arial", sans-serif;
+    margin: 0;
+    padding: 0;
+  }
+  
+  /* Container general */
+  .chapters-container {
+    display: flex;
+    height: 100vh;
+  }
+  
+  /* Sidebar */
+  .sidebar {
+    width: 250px;
+    background: #fdf6e3;
+    padding: 20px;
+    border-right: 2px solid #c4a484;
+    box-shadow: 3px 0 10px rgba(0, 0, 0, 0.1);
+  }
+  
+  .sidebar-title {
+    font-size: 22px;
+    font-weight: bold;
+    color: #4a3f35;
+    margin-bottom: 20px;
+  }
+  
+  .sidebar-menu {
+    list-style: none;
+    padding: 0;
+  }
+  
+  .sidebar-menu li {
+    padding: 12px;
+    cursor: pointer;
+    border-radius: 8px;
+    transition: background 0.3s;
+  }
+  
+  .sidebar-menu li:hover {
+    background: #e0c9a6;
+  }
+  
+  /* Conținut principal */
+  .chapters-content {
+    flex: 1;
+    padding: 20px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+  }
+  
+  /* Titlul paginii */
+  .chapters-title {
+    font-size: 26px;
+    font-weight: bold;
+    color: #4a3f35;
+    margin-bottom: 20px;
+  }
+  
+  /* Lista capitolelor */
+  .chapters-list {
+    display: flex;
+    flex-direction: column;
+    gap: 15px;
+    width: 100%;
+    max-width: 600px;
+  }
+  
+  /* Capitol */
+  .chapter-item {
+    background: #ffffff;
+    border-radius: 12px;
+    padding: 15px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    box-shadow: 0 3px 10px rgba(0, 0, 0, 0.1);
+    cursor: pointer;
+    border: 2px solid #c4a484;
+    transition: transform 0.2s, background 0.3s;
+  }
+  
+  .chapter-item:hover {
+    transform: scale(1.02);
+    background: #f8e9d1;
+  }
+  
+  /* Text capitol */
+  .chapter-info h2 {
+    margin: 0;
+    font-size: 18px;
+    color: #4a3f35;
+  }
+  
+  /* Status */
+  .status {
+    font-size: 14px;
+    font-weight: bold;
+    display: block;
+    margin-top: 5px;
+  }
+  
+  .status.completed {
+    color: green;
+  }
+  
+  .status.pending {
+    color: #ff9900;
+  }
+  
+  /* Buton de start */
+  .start-button {
+    background: #007bff;
+    color: white;
+    border: none;
+    padding: 8px 15px;
+    border-radius: 8px;
+    font-size: 14px;
+    font-weight: bold;
+    cursor: pointer;
+    transition: background 0.2s;
+  }
+  
+  .start-button:hover {
+    background: #0056b3;
+  }
+  
