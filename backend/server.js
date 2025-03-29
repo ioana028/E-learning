@@ -3,7 +3,8 @@ const cors = require('cors');
 const bodyParser = require('body-parser');
 const oracledb = require('oracledb');
 const bcrypt = require("bcrypt");
-
+const jwt = require("jsonwebtoken");
+const SECRET_KEY = "your_secret_key";
 
 const app = express();
 app.use(cors());
@@ -29,20 +30,20 @@ app.post('/login', async (req, res) => {
       [username]
     );
 
-    if (result.rows.length > 0) {
-      const hashedPassword = result.rows[0][0];
-
-      // 🔹 Compară parola introdusă cu cea din baza de date
-      const match = await bcrypt.compare(password, hashedPassword);
-
-      if (match) {
-        console.log("Autentificare reușită");
-        return res.json({ success: true });
-      }
+    if (result.rows.length === 0) {
+      console.log("❌ No user found");
+      return res.status(401).json({ success: false, message: "Invalid credentials" });
     }
 
-    console.log("Autentificare eșuată: utilizator sau parolă greșită");
-    res.json({ success: false, message: "Username sau parolă incorectă!" });
+    const user = result.rows[0];
+    const userId = user[0];
+
+    const token = jwt.sign({ userId }, SECRET_KEY, { expiresIn: "1h" });
+    console.log(`${token}`);
+
+    console.log("Login success! Token generated:", token);
+    res.json({ success: true, token });
+
 
   } catch (err) {
     console.error("Eroare în timpul autentificării:", err);
@@ -59,9 +60,8 @@ app.post('/login', async (req, res) => {
     }
   }
 });
-
 app.post('/register', async (req, res) => {
-  const { username, email, password } = req.body;
+  const { username, email, password } = req.body; // Parola nu va mai fi hash-uită
   let connection;
 
   try {
@@ -81,18 +81,38 @@ app.post('/register', async (req, res) => {
       return res.status(400).json({ success: false, message: "Username-ul este deja folosit!" });
     }
 
-    // 🔹 Criptează parola înainte de a o salva
-    const hashedPassword = await bcrypt.hash(password, 10);
+    // 🔹 Initializare LAST_COMPLETED_LESSONS ca JSON (CLOB)
+    const lastCompletedLessons = '{"1": 0, "2": 0, "3": 0}'; // Progresul inițializat pentru toate capitolele la lecția 0
 
     // 🔹 Inserează utilizatorul în baza de date
-    await connection.execute(
-      `INSERT INTO users (username, email, password, last_completed_chapter, last_completed_lesson) VALUES (:username, :email, :password, 0, 0)`,
-      [username, email, hashedPassword],
+    let userId;
+    const result = await connection.execute(
+      `INSERT INTO users (username, email, password, last_completed_chapter, last_completed_lessons) 
+   VALUES (:username, :email, :password, 0, :lastCompletedLessons) 
+   RETURNING user_id INTO :userId`,
+      {
+        username,
+        email,
+        password,
+        lastCompletedLessons,
+        userId: { dir: oracledb.BIND_OUT, type: oracledb.NUMBER } // Asigură-te că această variabilă este legată corect
+      },
       { autoCommit: true }
     );
 
-    console.log("Utilizator înregistrat cu succes!");
-    res.json({ success: true, message: "Cont creat cu succes!" });
+    // Verifică rezultatul
+    userId = result.outBinds.userId[0];
+    console.log("UserId generat:", userId);
+
+    // Obține ID-ul utilizatorului generat
+    //const userId = result.outBinds.userId[0];
+
+    // 🔹 Generează un token JWT
+    const token = jwt.sign({ userId }, SECRET_KEY, { expiresIn: "1h" });
+    console.log("Cont creat cu succes! Token generat:", token);
+
+    // Răspuns cu token-ul generat
+    res.json({ success: true, message: "Cont creat cu succes!", token });
 
   } catch (err) {
     console.error("Eroare la înregistrare:", err);
@@ -114,136 +134,141 @@ app.get('/chapters', async (req, res) => {
   let connection;
   try {
     console.log("Fetching chapters...");
-    connection = await oracledb.getConnection(dbConfig); console.log("Connected to Oracle DB");
-    const result = await connection.execute(`SELECT * FROM CHAPTERS ORDER BY ID`); console.log("Chapters fetched:", result.rows);
+    connection = await oracledb.getConnection(dbConfig);
+    console.log("✅ Connected to Oracle DB");
+
+    // 1️⃣ Get all chapters
+    const result = await connection.execute(`SELECT ID, TITLE, DESCRIPTION FROM CHAPTERS ORDER BY ID`);
+
+    // 2️⃣ Get `last_completed_chapter` from the logged-in user
+    const authHeader = req.headers.authorization;
+    if (!authHeader) {
+      return res.status(401).json({ success: false, message: "No token provided" });
+    }
+
+    const token = authHeader.split(" ")[1]; // Extract token
+    const decoded = jwt.verify(token, "your_secret_key"); // Verify token
+    const userId = decoded.userId;
+
+    const userResult = await connection.execute(
+      `SELECT LAST_COMPLETED_CHAPTER FROM USERS WHERE USER_ID = :userId`,
+      [userId]
+    );
+
+    let lastCompletedChapter = userResult.rows.length > 0 ? userResult.rows[0][0] : 0;
+
+    console.log(`🔹 User ${userId} last completed chapter:`, lastCompletedChapter);
+
+    // 3️⃣ Map chapters and mark them as completed
     const chapters = result.rows.map(row => ({
       id: row[0],
       title: row[1],
-      description: row[2]
+      description: row[2],
+      completed: row[0] <= lastCompletedChapter // ✅ Mark completed
     }));
+
     res.json({ success: true, chapters });
+
   } catch (error) {
-    console.error("Database error:", error.message);
+    console.error("❌ Database error:", error.message);
     res.status(500).json({ success: false, message: "Eroare la extragerea capitolelor", details: error.message });
   } finally {
     if (connection) {
       try {
         await connection.close();
-        console.log("Database connection closed.");
+        console.log("✅ Database connection closed.");
       } catch (err) {
-        console.error("Error closing connection:", err);
+        console.error("❌ Error closing connection:", err);
       }
     }
   }
 });
 
-app.get('/chapters/:userId', async (req, res) => {
+
+app.get('/lectii/:chapterId', async (req, res) => {
   let connection;
-  const userId = req.params.userId;
+  const { chapterId } = req.params;
 
   try {
-    console.log(`Fetching chapters for user ${userId}...`);
-    connection = await oracledb.getConnection(dbConfig);  console.log("Connected to Oracle DB");
+    console.log(`📢 Fetching lessons for Chapter ${chapterId}...`);
 
-    // Fetch all chapters
-    const chaptersResult = await connection.execute(
-      `SELECT ID, TITLE, DESCRIPTION FROM CHAPTERS ORDER BY ID`
-    );   //console.log("Raw chapter data:", chaptersResult.rows);
-
-    // Fetch user's last completed chapter
-    const userProgressResult = await connection.execute(
-      `SELECT LAST_COMPLETED_CHAPTER FROM USERS WHERE USER_ID = :userId`,
-      [userId]
-    );
-
-    // If no result, set progress to 0
-    const lastCompletedChapter = userProgressResult.rows.length > 0
-      ? Number(userProgressResult.rows[0][0]) || 0
-      : 0;  // console.log(`User ${userId} last completed chapter: ${lastCompletedChapter}`);
-
-    // Transform the result into JSON format
-    const chapters = chaptersResult.rows.map(row => ({
-      id: row[0],
-      title: row[1],
-      description: row[2],
-      completed: row[0] <= lastCompletedChapter  
-    })); //console.log("Formatted chapters:", chapters);
-    
-    res.json({ success: true, chapters });
-  } catch (error) {
-    console.error("Database error:", error.message);
-    res.status(500).json({ success: false, message: "Eroare la extragerea capitolelor.", details: error.message });
-
-  } finally {
-    if (connection) {
-      try {
-        await connection.close();
-        console.log("Database connection closed.");
-      } catch (err) {
-        console.error("Error closing connection:", err);
-      }
+    // ✅ Extract userId from the JWT token
+    const authHeader = req.headers.authorization;
+    if (!authHeader) {
+      return res.status(401).json({ success: false, message: "No token provided" });
     }
-  }
-});
 
-app.get('/lectii/:chapterId/:userId', async (req, res) => {
-  let connection;
-  const { chapterId, userId } = req.params;
-
-  try {
-    console.log(`Fetching lessons for Chapter ${chapterId} and User ${userId}...`);
+    const token = authHeader.split(" ")[1]; // Extract token
+    const decoded = jwt.verify(token, "your_secret_key"); // Verify token
+    const userId = decoded.userId;
 
     connection = await oracledb.getConnection(dbConfig);
-    console.log("Connected to Oracle DB");
+    console.log("✅ Connected to Oracle DB");
 
-    // Fetch lessons for the given chapter
+    // ✅ Fetch lessons for the given chapter
     const lessonsResult = await connection.execute(
-      `SELECT ID, TITLE FROM LESSONS WHERE CHAPTER_ID = :chapterId ORDER BY ID`,
+      `SELECT ID,LESSON_NUMBER, TITLE FROM LESSONS WHERE CHAPTER_ID = :chapterId ORDER BY ID`,
       [chapterId]
     );
 
     console.log("Lessons found:", lessonsResult.rows);
 
-    // Fetch user's last completed lesson
+    // ✅ Fetch user's last completed lessons
     const userProgressResult = await connection.execute(
-      `SELECT LAST_COMPLETED_LESSON FROM USERS WHERE USER_ID = :userId`,
+      `SELECT LAST_COMPLETED_LESSONS FROM USERS WHERE USER_ID = :userId`,
       [userId]
     );
 
-    // If no result, set progress to 0
-    const lastCompletedLesson = userProgressResult.rows.length > 0
-      ? Number(userProgressResult.rows[0][0]) || 0
-      : 0;
+    let lastCompletedLessons = {}; // Default empty JSON object
+    console.log("---------", userProgressResult.rows);
+    if (userProgressResult.rows.length > 0 && userProgressResult.rows[0][0]) {
+      try {
+        // Extrage datele din obiectul Lob
+        const lob = userProgressResult.rows[0][0]; // Lob obiect
+        const lobData = await lob.getData(); // Extrage datele din Lob
 
-    console.log(`User ${userId} last completed lesson: ${lastCompletedLesson}`);
+        // Lob data este un buffer, așa că trebuie să o convertești într-un string
+        const jsonData = lobData.toString();
 
-    // Transform the result into JSON format
+        // Parsează JSON-ul
+        lastCompletedLessons = JSON.parse(jsonData);
+        console.log("Last completed lessons:", lastCompletedLessons);
+        //lastCompletedLessons = JSON.parse(userProgressResult.rows[0][0]); // Parse JSON
+      } catch (error) {
+        console.error("❌ Error parsing LAST_COMPLETED_LESSONS JSON:", error);
+      }
+    }
+
+    // ✅ Get last completed lesson for the specific chapter
+    const lastCompletedLesson = lastCompletedLessons[chapterId] || 0;
+
+    console.log(`🔹 User ${userId} last completed lesson in Chapter ${chapterId}: ${lastCompletedLesson}`);
+
+    // ✅ Transform the result into JSON format
     const lessons = lessonsResult.rows.map(row => ({
       id: row[0],
-      title: row[1],
-      completed: row[0] <= lastCompletedLesson // ✅ Marks completed lessons
+      title: row[2],
+      completed: row[1] <= lastCompletedLesson // ✅ Marks completed lessons
     }));
 
-    console.log("Formatted lessons:", lessons);
-
+    console.log("✅ Formatted lessons:", lessons);
     res.json({ success: true, lessons });
 
   } catch (error) {
-    console.error("Database error:", error.message);
-    res.status(500).json({ success: false, message: "Eroare la extragerea lecțiilor.", details: error.message });
+    console.error("❌ Database error:", error.message);
+    res.status(500).json({ success: false, message: "Error fetching lessons", details: error.message });
 
   } finally {
     if (connection) {
       try {
         await connection.close();
-        console.log("Database connection closed.");
+        console.log("✅ Database connection closed.");
       } catch (err) {
-        console.error("Error closing connection:", err);
+        console.error("❌ Error closing connection:", err);
       }
     }
   }
 });
-
 
 
 
@@ -252,3 +277,21 @@ app.get('/lectii/:chapterId/:userId', async (req, res) => {
 
 
 app.listen(5000, () => console.log('Backend running on http://localhost:5000'));
+
+
+
+
+
+
+
+
+
+
+
+
+//const { chapterId } = req.params;
+//DE CE PUNEM const {} ???
+
+//destructuring assignment -- req.params este un obiect care contine parametrii din URL-ul cererii
+//de exemplu pt ruta /lectii/5  { chapterId: '5' }
+//deci { chapterId } este sintaxa de destructurare a obiectului din req.params asociata cheii chapterId

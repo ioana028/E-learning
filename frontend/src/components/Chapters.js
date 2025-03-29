@@ -3,7 +3,6 @@ import { useNavigate } from "react-router-dom";
 import axios from "axios";
 import "./Chapters.css"; // Import stilul separat
 
-const userId = 1; // Change this to the logged-in user’s ID dynamically
 
 const Chapters = () => {
   const navigate = useNavigate();
@@ -12,18 +11,28 @@ const Chapters = () => {
   // Fetch chapters from backend
   useEffect(() => {
     const fetchChapters = async () => {
+      const token=localStorage.getItem("token");
+      if(!token){
+        console.log("No token found");
+        return;
+      }
+      console.log("Token found Sending request to: http://localhost:5000/chapters");
       try {
-        const response = await axios.get(`http://localhost:5000/chapters/${userId}`);
+        const response = await axios.get(`http://localhost:5000/chapters`,{
+          headers:{Authorization:`Bearer ${token}`}
+        });
+        console.log("Response received:", response.data);
         if (response.data.success) {
           setChapters(response.data.chapters);
         }
       } catch (error) {
         console.error("Error fetching chapters:", error);
+        
       }
     };
 
     fetchChapters();
-  }, []);
+  }, [navigate]);
 
   return (
     <div className="chapters-container">

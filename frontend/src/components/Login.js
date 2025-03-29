@@ -3,6 +3,8 @@ import { useNavigate } from "react-router-dom";
 import axios from "axios";
 import "./Login.css"; // Importă fișierul CSS separat
 
+
+
 const Login = () => {
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
@@ -13,9 +15,13 @@ const Login = () => {
     e.preventDefault();
     try {
       const response = await axios.post("http://localhost:5000/login", { username, password });
-      if (response.data.success) {
+      console.log("📢 Login API Response:", response.data);
+      if (response.data.success  && response.data.token) {
+        localStorage.setItem("token", response.data.token); // ✅ Store token
+        console.log("✅ Token saved in localStorage:", response.data.token);
         navigate("/chapters");
       } else {
+        console.error("❌ Login failed:", response.data.message);
         setError("Invalid credentials");
       }
     } catch (err) {
