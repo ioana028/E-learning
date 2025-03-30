@@ -270,6 +270,37 @@ app.get('/lectii/:chapterId', async (req, res) => {
   }
 });
 
+app.get('/exercitii/:lessonId',async(req,res)=>{
+  let connection;
+  const { lessonId } = req.params; // preia lessonId din URL
+
+  console.log("--------Lesson:",lessonId);
+  if (!lessonId) {
+      return res.status(400).json({ success: false, message: 'Lesson ID is required' });
+  }
+  console.log("--------Lesson: exista");
+  connection = await oracledb.getConnection(dbConfig);
+    console.log("✅ -----Connected to Oracle DB");
+  try {
+      // Query pentru a obține exercițiile asociate lecției
+      const result = await connection.execute(
+          'SELECT TYPE,LESSON_ID,QUESTION,OPTIONS,ANSWER FROM exercises WHERE lesson_id = :lessonId', [lessonId]
+      );
+      console.log("--------Exercitiile au fost preluate",result.rows);
+
+      // Dacă există exerciții pentru lecția respectivă
+      if (result.rows.length > 0) {
+        console.log("------exista exercitii pt lectie in db");
+          return res.json({ success: true, exercises: result });
+      } else {
+        console.log("------ nu exista exercitii pt lectie in db");
+          return res.status(404).json({ success: false, message: 'No exercises found for this lesson' });
+      }
+  } catch (error) {
+      console.error("-------Error fetching exercises:", error);
+      return res.status(500).json({ success: false, message: 'Server error while fetching exercises' });
+  } 
+});
 
 
 

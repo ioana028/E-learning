@@ -41,7 +41,7 @@ const Register = () => {
 
   return (
     <div className="registerWraper">
-    <img className="register-climbing-plant2" src="\images\climbing-plant2.png" alt="plant1"></img>
+    <img className="register-climbing-plant2" src="/images/climbing-plant2.png" alt="plant1"></img>
     <div className="register-container">
       <form onSubmit={handleRegister} className="register-card">
         <h2 className="register-title">Creează un cont</h2>
@@ -76,7 +76,7 @@ const Register = () => {
         </p>
       </form>
     </div>
-    <img className="register-plant2" src="\images\plant2.png" alt="plant1"></img>
+    <img className="register-plant2" src="/images/plant2.png" alt="plant1"></img>
 
     </div>
   );

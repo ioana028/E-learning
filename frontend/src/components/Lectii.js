@@ -29,8 +29,9 @@ const Lectii = () => {
       const token = localStorage.getItem("token");
       if (!token) {
         console.log("❌ No token found, redirecting...");
-        return;}
-        
+        return;
+      }
+
       const userId = getUserIdFromToken();
       if (!userId) {
         // Redirect if the token is invalid
@@ -96,7 +97,13 @@ const Lectii = () => {
                     >
                       <h3>{lesson.title}</h3>
                       <p>{`Lecția ${lesson.id} din ${lessons.length}`}</p>
-                      <button className="start-button">ÎNCEPE +10XP</button>
+                      <button
+                        className="start-button"
+                        onClick={() => navigate(`/exercitii/${lesson.id}`)}
+                      >
+                        ÎNCEPE +10XP
+                      </button>
+
                     </motion.div>
                   )}
                 </div>

@@ -5,6 +5,7 @@ import Lectii from './components/Lectii';
 import Chapters from './components/Chapters';
 import Welcome from './components/Welcome';
 import Register from './components/Register';
+import Exercitii from './components/Exercitii';
 
 
 const App = () => (
@@ -15,6 +16,7 @@ const App = () => (
       <Route path="/register" element={<Register />} />
       <Route path="/chapters" element={<Chapters />} />
       <Route path="/lectii/:chapterId" element={<Lectii />} />
+      <Route path="/exercitii/:lessonId" element={<Exercitii />} />
     </Routes>
   </Router>
 );

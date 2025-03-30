@@ -31,7 +31,7 @@ const Login = () => {
 
   return (
     <div className="loginWraper">
-    <img className="plant1" src="\images\plant1.png" alt="plant1"></img>
+    <img className="plant1" src="/images/plant1.png" alt="plant1"></img>
     <div className="login-container">
       <div className="login-card">
         <h2 className="login-title">E-Learning Login</h2>
@@ -57,7 +57,7 @@ const Login = () => {
         </form>
       </div>
     </div>
-    <img className="plant2" src="\images\plant2.png" alt="plant1"></img>
+    <img className="plant2" src="/images/plant2.png" alt="plant1"></img>
     </div>
   );
 };
