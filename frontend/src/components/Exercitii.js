@@ -10,7 +10,8 @@ const Exercitii = () => {
   const [selectedOption, setSelectedOption] = useState(null);
   const [isChecked, setIsChecked] = useState(false);
   const [isCorrect, setIsCorrect] = useState(null);
-  const [correctAnswers, setCorrectAnswers] = useState(0); // Urmărim câte răspunsuri sunt corecte
+  const [correctAnswers, setCorrectAnswers] = useState(0);
+  const [showResult, setShowResult] = useState(false); // State pentru a arăta rezultatul final
 
   useEffect(() => {
     const fetchExercises = async () => {
@@ -45,7 +46,7 @@ const Exercitii = () => {
       setIsChecked(true);
       if (selectedOption === correctAnswer) {
         setIsCorrect(true);
-        setCorrectAnswers(correctAnswers + 1); // Incrementăm răspunsurile corecte
+        setCorrectAnswers(correctAnswers + 1);
       } else {
         setIsCorrect(false);
       }
@@ -57,12 +58,14 @@ const Exercitii = () => {
     const passingMark = totalQuestions / 2;
 
     if (correctAnswers > passingMark) {
-      alert("Felicitări! Ai trecut!");
+      setShowResult(true);
     } else {
-      alert("Ai nevoie de mai multă practică. Încearcă din nou!");
+      setShowResult(true);
     }
-    // Redirect to lessons page
-    navigate(`/lectii/${lessonId}`);
+  };
+
+  const handleRedirect = () => {
+    navigate(`/lectii/${lessonId}`); // Redirecționăm utilizatorul către lecții
   };
 
   const renderExercise = (exercise) => {
@@ -94,16 +97,19 @@ const Exercitii = () => {
             <button onClick={() => handleCheckAnswer(answer)} disabled={selectedOption === null}>
               Verifică răspunsul
             </button>
+
             {isChecked && (
               <div style={{ marginTop: "10px", color: isCorrect ? "green" : "red" }}>
                 {isCorrect ? "✔ Răspuns corect!" : "❌ Răspuns greșit!"}
               </div>
             )}
+
             {isChecked && currentIndex === exercises.length - 1 && (
               <button onClick={handleFinish} style={{ marginTop: "10px" }}>
                 Încheie și vezi rezultatele
               </button>
             )}
+
             {isChecked && currentIndex < exercises.length - 1 && (
               <button onClick={handleNext} style={{ marginTop: "10px" }}>
                 Next
@@ -120,8 +126,46 @@ const Exercitii = () => {
 
   return (
     <div className="exercise-page">
-      <h2>Exercițiu {currentIndex + 1} din {exercises.length}</h2>
-      {renderExercise(exercises[currentIndex])}
+      {/* Afișăm doar exercițiile până la final */}
+      {!showResult && (
+        <>
+          <h2>Exercițiu {currentIndex + 1} din {exercises.length}</h2>
+          {renderExercise(exercises[currentIndex])}
+        </>
+      )}
+
+      {/* Afișăm doar mesajul de felicitare sau încercare după finalizarea exercițiilor */}
+      {showResult && (
+        <div
+          style={{
+            textAlign: "center",
+            padding: "20px",
+            marginTop: "20px",
+            borderRadius: "8px",
+            backgroundColor: correctAnswers > exercises.length / 2 ? "#d4edda" : "#f8d7da",
+            color: correctAnswers > exercises.length / 2 ? "#155724" : "#721c24",
+          }}
+        >
+          {correctAnswers > exercises.length / 2 ? (
+            <>
+              <h3>Felicitări! Ai trecut examenul! 🎉</h3>
+              <p>Ai răspuns corect la {correctAnswers} din {exercises.length} exerciții.</p>
+              <span role="img" aria-label="green-check">✅</span>
+            </>
+          ) : (
+            <>
+              <h3>Nu ai trecut examenul. Mai încearcă! 😞</h3>
+              <p>Ai răspuns corect la {correctAnswers} din {exercises.length} exerciții.</p>
+              <span role="img" aria-label="red-cross">❌</span>
+            </>
+          )}
+
+          {/* Butonul pentru redirecționare */}
+          <button onClick={handleRedirect} style={{ marginTop: "20px", padding: "10px 20px", backgroundColor: "#28a745", color: "white", borderRadius: "5px" }}>
+            Mergi la lecții
+          </button>
+        </div>
+      )}
     </div>
   );
 };
