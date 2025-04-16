@@ -270,36 +270,96 @@ app.get('/lectii/:chapterId', async (req, res) => {
   }
 });
 
-app.get('/exercitii/:lessonId',async(req,res)=>{
+app.get('/exercitii/:lessonId', async (req, res) => {
   let connection;
   const { lessonId } = req.params; // preia lessonId din URL
 
-  console.log("--------Lesson:",lessonId);
+  console.log("--------Lesson:", lessonId);
   if (!lessonId) {
-      return res.status(400).json({ success: false, message: 'Lesson ID is required' });
+    return res.status(400).json({ success: false, message: 'Lesson ID is required' });
   }
   console.log("--------Lesson: exista");
   connection = await oracledb.getConnection(dbConfig);
-    console.log("✅ -----Connected to Oracle DB");
+  console.log("✅ -----Connected to Oracle DB");
   try {
-      // Query pentru a obține exercițiile asociate lecției
-      const result = await connection.execute(
-          'SELECT TYPE,LESSON_ID,QUESTION,OPTIONS,ANSWER FROM exercises WHERE lesson_id = :lessonId', [lessonId]
-      );
-      console.log("--------Exercitiile au fost preluate",result.rows);
+    // Query pentru a obține exercițiile asociate lecției
+    const result = await connection.execute(
+      'SELECT TYPE,LESSON_ID,QUESTION,OPTIONS,ANSWER FROM exercises WHERE lesson_id = :lessonId', [lessonId]
+    );
+    console.log("--------Exercitiile au fost preluate", result.rows);
 
-      // Dacă există exerciții pentru lecția respectivă
-      if (result.rows.length > 0) {
-        console.log("------exista exercitii pt lectie in db");
-          return res.json({ success: true, exercises: result });
-      } else {
-        console.log("------ nu exista exercitii pt lectie in db");
-          return res.status(404).json({ success: false, message: 'No exercises found for this lesson' });
-      }
+    // Dacă există exerciții pentru lecția respectivă
+    if (result.rows.length > 0) {
+      console.log("------exista exercitii pt lectie in db");
+      return res.json({ success: true, exercises: result });
+    } else {
+      console.log("------ nu exista exercitii pt lectie in db");
+      return res.status(404).json({ success: false, message: 'No exercises found for this lesson' });
+    }
   } catch (error) {
-      console.error("-------Error fetching exercises:", error);
-      return res.status(500).json({ success: false, message: 'Server error while fetching exercises' });
-  } 
+    console.error("-------Error fetching exercises:", error);
+    return res.status(500).json({ success: false, message: 'Server error while fetching exercises' });
+  }
+});
+
+app.post("/api/update-progress", async (req, res) => {
+  const authHeader = req.headers.authorization;
+  if (!authHeader) return res.status(401).json({ message: "Token lipsa" });
+
+  const token = authHeader.split(" ")[1];
+  let decoded;
+  try {
+    decoded = jwt.verify(token, "your_secret_key");
+  } catch (err) {
+    return res.status(403).json({ message: "Token invalid" });
+  }
+
+  const userId = decoded.userId;
+  const { chapterId, lessonId } = req.body;
+  console.log(`---userId----- ${userId}`)
+
+  //LOGICA UPDATE ULTIMA LECTIE COMPLETATA DIN CAPITOLUL CURENT
+  try{
+     const connection=await oracledb.getConnection(dbConfig);
+
+     const result=await connection.execute(
+      `SELECT last_completed_lessons FROM users WHERE user_id=:userId FOR UPDATE`,
+      [userId],
+      {outFormat:oracledb.OUT_FORMAT_OBJECT}
+     );
+
+     console.log(`---result----- ${result}`)
+
+     let jsonStr= result.rows[0]?.LAST_COMPLETED_LESSONS||"{}";
+     let progress={};
+
+     console.log(`---progres----- ${progress}`)
+     try{
+      progress=JSON.parse(jsonStr);
+     }catch(e){
+      console.error("JSON invalid , resetam....");
+      progress={};
+     }
+
+     const existing=progress[chapterId];
+     if(!existing|| lessonId>existing){
+      progress[chapterId]=lessonId;
+     }
+     console.log(`----progres2---- ${progress}`);
+
+     await connection.execute(
+      `UPDATE users SET last_completed_lessons = :json WHERE user_id = :userId`,
+      { json: JSON.stringify(progress), userId }
+     );
+
+     await connection.commit();
+    await connection.close();
+
+    res.json({ success: true, message: "Progres salvat cu succes." });
+  }catch (err){
+    console.error("Eroare DB:",err);
+    res.status(500).json({success:false,message:"Eroare interna server"});
+  }
 });
 
 

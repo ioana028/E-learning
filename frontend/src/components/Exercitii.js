@@ -25,9 +25,9 @@ const Exercitii = () => {
   const [rightWords, setRightWords] = useState([]);
 
   const leftRefs = useMemo(() => ({}), []);
-const rightRefs = useMemo(() => ({}), []);
+  const rightRefs = useMemo(() => ({}), []);
 
-  
+
 
   const shuffleArray = (array) => {
     const shuffled = [...array];
@@ -114,8 +114,30 @@ const rightRefs = useMemo(() => ({}), []);
     }
   };
 
-  const handleFinish = () => {
+  const handleFinish = async () => {
     setShowResult(true);
+
+    const passed = correctAnswers > exercises.length / 2;
+    if (!passed) return;
+
+    try {
+      
+      const chapterId = 1; // determinat din lecție sau pasat ca prop
+      const lessonNumber = 1; // sau din info lecție
+
+      await axios.post("http://localhost:5000/api/update-progress", {
+        chapterId,
+        lessonNumber
+      },
+        {
+          headers: {
+            Authorization: `Bearer ${localStorage.getItem("token")}`
+          }
+        }
+      );
+    } catch (error) {
+      console.error("Eroare la salvarea progresului:", error);
+    }
   };
 
   const handleRedirect = () => {
@@ -133,6 +155,7 @@ const rightRefs = useMemo(() => ({}), []);
 
   const renderExercise = (exercise) => {
     const [type, , question, options, answer] = exercise;
+
 
     switch (type) {
       case 1:
@@ -180,7 +203,6 @@ const rightRefs = useMemo(() => ({}), []);
             )}
           </div>
         );
-
       case 2:
         const words = shuffledWords;
 
@@ -311,182 +333,201 @@ const rightRefs = useMemo(() => ({}), []);
             )}
           </div>
         );
-        case 3:
-  const pairs = options.split(",").map(pair => {
-    const [left, right] = pair.split(":");
-    return { left, right };
-  });
-  const leftWords = pairs.map(p => p.left);
-
-  
+      case 3:
+        const pairs = options.split(",").map(pair => {
+          const [left, right] = pair.split(":");
+          return { left, right };
+        });
+        const leftWords = pairs.map(p => p.left);
 
 
-  const handleSelect = (side, word) => {
-    if (side === "left") {
-      setSelectedLeft(word);
-    } else if (selectedLeft) {
-      const alreadyMatched = userMatches.some(match => match.left === selectedLeft);
-      if (!alreadyMatched) {
-        setUserMatches([...userMatches, { left: selectedLeft, right: word }]);
-        setSelectedLeft(null);
-      }
-    }
-  };
 
-  const handleVerify = () => {
-    const results = userMatches.map(pair => {
-      const found = pairs.find(p => p.left === pair.left && p.right === pair.right);
-      return { ...pair, correct: !!found };
-    });
-    setMatchResults(results);
-    const correctCount = results.filter(r => r.correct).length;
-    if (correctCount === pairs.length) {
-      setCorrectAnswers(correctAnswers + 1);
-    }
-    setIsChecked(true);
-  };
 
-  const getResultFor = (left, right) => {
-    const result = matchResults.find(r => r.left === left && r.right === right);
-    return result ? result.correct : null;
-  };
+        const handleSelect = (side, word) => {
+          if (side === "left") {
+            const matchIndex = userMatches.findIndex(m => m.left === word);
+            if (matchIndex !== -1) {
+              const updated = [...userMatches];
+              updated.splice(matchIndex, 1);
+              setUserMatches(updated);
+              setSelectedLeft(word); // selectează după ștergere
+              return;
+            }
+            setSelectedLeft(word);
+          } else if (selectedLeft) {
+            const alreadyMatched = userMatches.some(match => match.left === selectedLeft);
+            if (!alreadyMatched) {
+              setUserMatches([...userMatches, { left: selectedLeft, right: word }]);
+              setSelectedLeft(null);
+            }
+          } else {
+            const matchIndex = userMatches.findIndex(m => m.right === word);
+            if (matchIndex !== -1) {
+              const pair = userMatches[matchIndex];
+              const updated = [...userMatches];
+              updated.splice(matchIndex, 1);
+              setUserMatches(updated);
+              setSelectedLeft(pair.left); // selectează cuvântul stânga după ștergere
+            }
+          }
+        };
 
-  const handleResetMatches = () => {
-    setUserMatches([]);
-    setMatchResults([]);
-    setSelectedLeft(null);
-    setIsChecked(false);
-  };
 
-  const drawLines = () => {
-    return userMatches.map((match, index) => {
-      const leftEl = leftRefs[match.left]?.current;
-      const rightEl = rightRefs[match.right]?.current;
 
-      if (!leftEl || !rightEl) return null;
+        const handleVerify = () => {
+          const results = userMatches.map(pair => {
+            const found = pairs.find(p => p.left === pair.left && p.right === pair.right);
+            return { ...pair, correct: !!found };
+          });
+          setMatchResults(results);
+          const correctCount = results.filter(r => r.correct).length;
+          if (correctCount === pairs.length) {
+            setCorrectAnswers(correctAnswers + 1);
+          }
+          setIsChecked(true);
+        };
 
-      const leftRect = leftEl.getBoundingClientRect();
-      const rightRect = rightEl.getBoundingClientRect();
+        const getResultFor = (left, right) => {
+          const result = matchResults.find(r => r.left === left && r.right === right);
+          return result ? result.correct : null;
+        };
 
-      const svgRect = document.getElementById("match-svg").getBoundingClientRect();
+        const handleResetMatches = () => {
+          setUserMatches([]);
+          setMatchResults([]);
+          setSelectedLeft(null);
+          setIsChecked(false);
+        };
 
-      const x1 = leftRect.right - svgRect.left;
-      const y1 = leftRect.top + leftRect.height / 2 - svgRect.top;
-      const x2 = rightRect.left - svgRect.left;
-      const y2 = rightRect.top + rightRect.height / 2 - svgRect.top;
+        const drawLines = () => {
+          return userMatches.map((match, index) => {
+            const leftEl = leftRefs[match.left]?.current;
+            const rightEl = rightRefs[match.right]?.current;
 
-      const color = getResultFor(match.left, match.right) === false ? "red" : "green";
+            if (!leftEl || !rightEl) return null;
 
-      return (
-        <line
-          key={index}
-          x1={x1}
-          y1={y1}
-          x2={x2}
-          y2={y2}
-          stroke={color}
-          strokeWidth="2"
-        />
-      );
-    });
-  };
+            const leftRect = leftEl.getBoundingClientRect();
+            const rightRect = rightEl.getBoundingClientRect();
 
-  return (
-    <div style={{ position: "relative" }}>
-      <h3>{question}</h3>
+            const svgRect = document.getElementById("match-svg").getBoundingClientRect();
 
-      <div style={{ display: "flex", gap: "40px", position: "relative" }}>
-        <div>
-          <h4>Engleză</h4>
-          {leftWords.map((word, idx) => {
-            if (!leftRefs[word]) leftRefs[word] = React.createRef();
-            return (
-              <div
-                ref={leftRefs[word]}
-                key={idx}
-                onClick={() => handleSelect("left", word)}
-                style={{
-                  padding: "10px",
-                  margin: "5px",
-                  borderRadius: "8px",
-                  border: "1px solid #ccc",
-                  backgroundColor: selectedLeft === word ? "#d1ecf1" : "#fff",
-                  cursor: "pointer"
-                }}
-              >
-                {word}
-              </div>
-            );
-          })}
-        </div>
+            const x1 = leftRect.right - svgRect.left;
+            const y1 = leftRect.top + leftRect.height / 2 - svgRect.top;
+            const x2 = rightRect.left - svgRect.left;
+            const y2 = rightRect.top + rightRect.height / 2 - svgRect.top;
 
-        <svg
-          id="match-svg"
-          style={{
-            position: "absolute",
-            top: 0,
-            left: 0,
-            width: "100%",
-            height: "100%",
-            pointerEvents: "none",
-            zIndex: 0
-          }}
-        >
-          {drawLines()}
-        </svg>
-
-        <div>
-          <h4>Română</h4>
-          {rightWords.map((word, idx) => {
-            if (!rightRefs[word]) rightRefs[word] = React.createRef();
-            const match = userMatches.find(m => m.right === word);
-            const leftWord = match ? match.left : null;
-            const result = getResultFor(leftWord, word);
+            const color = getResultFor(match.left, match.right) === false ? "red" : "green";
 
             return (
-              <div
-                ref={rightRefs[word]}
-                key={idx}
-                onClick={() => handleSelect("right", word)}
+              <line
+                key={index}
+                x1={x1}
+                y1={y1}
+                x2={x2}
+                y2={y2}
+                stroke={color}
+                strokeWidth="2"
+              />
+            );
+          });
+        };
+
+        return (
+          <div style={{ position: "relative" }}>
+            <h3>{question}</h3>
+
+            <div style={{ display: "flex", gap: "40px", position: "relative" }}>
+              <div>
+                <h4>Engleză</h4>
+                {leftWords.map((word, idx) => {
+                  if (!leftRefs[word]) leftRefs[word] = React.createRef();
+                  return (
+                    <div
+                      ref={leftRefs[word]}
+                      key={idx}
+                      onClick={() => handleSelect("left", word)}
+                      style={{
+                        padding: "10px",
+                        margin: "5px",
+                        borderRadius: "8px",
+                        border: "1px solid #ccc",
+                        backgroundColor: selectedLeft === word ? "#d1ecf1" : "#fff",
+                        cursor: "pointer"
+                      }}
+                    >
+                      {word}
+                    </div>
+                  );
+                })}
+              </div>
+
+              <svg
+                id="match-svg"
                 style={{
-                  padding: "10px",
-                  margin: "5px",
-                  borderRadius: "8px",
-                  border: "1px solid #ccc",
-                  backgroundColor: result === true ? "#d4edda" : result === false ? "#f8d7da" : "#fff",
-                  cursor: "pointer"
+                  position: "absolute",
+                  top: 0,
+                  left: 0,
+                  width: "100%",
+                  height: "100%",
+                  pointerEvents: "none",
+                  zIndex: 0
                 }}
               >
-                {word}
-              </div>
-            );
-          })}
-        </div>
-      </div>
+                {drawLines()}
+              </svg>
 
-      {!isChecked && (
-        <button onClick={handleVerify} disabled={userMatches.length < pairs.length} style={{ marginTop: "20px" }}>
-          Verifică răspunsurile
-        </button>
-      )}
-      {isChecked && (
-        <>
-          <div style={{ marginTop: "10px", color: matchResults.every(r => r.correct) ? "green" : "red" }}>
-            {matchResults.every(r => r.correct)
-              ? "✔ Ai potrivit toate cuvintele corect!"
-              : "❌ Unele potriviri sunt greșite."}
+              <div>
+                <h4>Română</h4>
+                {rightWords.map((word, idx) => {
+                  if (!rightRefs[word]) rightRefs[word] = React.createRef();
+                  const match = userMatches.find(m => m.right === word);
+                  const leftWord = match ? match.left : null;
+                  const result = getResultFor(leftWord, word);
+
+                  return (
+                    <div
+                      ref={rightRefs[word]}
+                      key={idx}
+                      onClick={() => handleSelect("right", word)}
+                      style={{
+                        padding: "10px",
+                        margin: "5px",
+                        borderRadius: "8px",
+                        border: "1px solid #ccc",
+                        backgroundColor: result === true ? "#d4edda" : result === false ? "#f8d7da" : "#fff",
+                        cursor: "pointer"
+                      }}
+                    >
+                      {word}
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+
+            {!isChecked && (
+              <button onClick={handleVerify} disabled={userMatches.length < pairs.length} style={{ marginTop: "20px" }}>
+                Verifică răspunsurile
+              </button>
+            )}
+            {isChecked && (
+              <>
+                <div style={{ marginTop: "10px", color: matchResults.every(r => r.correct) ? "green" : "red" }}>
+                  {matchResults.every(r => r.correct)
+                    ? "✔ Ai potrivit toate cuvintele corect!"
+                    : "❌ Unele potriviri sunt greșite."}
+                </div>
+                <button onClick={handleResetMatches} style={{ marginTop: "10px" }}>Încearcă din nou</button>
+                {currentIndex < exercises.length - 1 && (
+                  <button onClick={handleNext} style={{ marginLeft: "10px" }}>Următorul</button>
+                )}
+                {currentIndex === exercises.length - 1 && (
+                  <button onClick={handleFinish} style={{ marginLeft: "10px" }}>Final</button>
+                )}
+              </>
+            )}
           </div>
-          <button onClick={handleResetMatches} style={{ marginTop: "10px" }}>Încearcă din nou</button>
-          {currentIndex < exercises.length - 1 && (
-            <button onClick={handleNext} style={{ marginLeft: "10px" }}>Următorul</button>
-          )}
-          {currentIndex === exercises.length - 1 && (
-            <button onClick={handleFinish} style={{ marginLeft: "10px" }}>Final</button>
-          )}
-        </>
-      )}
-    </div>
-  );
+        );
 
       default:
         return <p>Tip necunoscut de exercițiu.</p>;
