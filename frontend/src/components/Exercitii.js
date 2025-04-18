@@ -23,6 +23,8 @@ const Exercitii = () => {
   const [userMatches, setUserMatches] = useState([]);
   const [matchResults, setMatchResults] = useState([]);
   const [rightWords, setRightWords] = useState([]);
+  const [chapterId, setChapterId] = useState(null);
+
 
   const leftRefs = useMemo(() => ({}), []);
   const rightRefs = useMemo(() => ({}), []);
@@ -52,6 +54,22 @@ const Exercitii = () => {
 
     fetchExercises();
   }, [lessonId]);
+
+  useEffect(() => {
+    const fetchChapterId = async () => {
+      try {
+        const res = await axios.get(`http://localhost:5000/api/lesson/${lessonId}/chapter`);
+        if (res.data.success) {
+          setChapterId(res.data.chapterId);
+        }
+      } catch (err) {
+        console.error("Eroare la obținerea chapterId:", err);
+      }
+    };
+  
+    fetchChapterId();
+  }, [lessonId]);
+  
 
   useEffect(() => {
     const currentExercise = exercises[currentIndex];
@@ -122,12 +140,10 @@ const Exercitii = () => {
 
     try {
       
-      const chapterId = 1; // determinat din lecție sau pasat ca prop
-      const lessonNumber = 1; // sau din info lecție
-
+      
       await axios.post("http://localhost:5000/api/update-progress", {
         chapterId,
-        lessonNumber
+        lessonId: parseInt(lessonId)
       },
         {
           headers: {
@@ -141,7 +157,7 @@ const Exercitii = () => {
   };
 
   const handleRedirect = () => {
-    navigate(`/lectii/${lessonId}`);
+    navigate(`/lectii/${chapterId}`);
   };
 
   // 👇 Cuvinte amestecate o singură dată per exercițiu de tip 2

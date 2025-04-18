@@ -26,8 +26,9 @@ app.post('/login', async (req, res) => {
     connection = await oracledb.getConnection(dbConfig); console.log("Conexiune la Oracle DB realizată");
 
     const result = await connection.execute(
-      `SELECT password FROM users WHERE username = :username`,
-      [username]
+      `SELECT user_id,password FROM users WHERE username = :username`,
+      [username],
+      { outFormat: oracledb.OUT_FORMAT_OBJECT }
     );
 
     if (result.rows.length === 0) {
@@ -36,7 +37,7 @@ app.post('/login', async (req, res) => {
     }
 
     const user = result.rows[0];
-    const userId = user[0];
+    const userId = user.USER_ID;
 
     const token = jwt.sign({ userId }, SECRET_KEY, { expiresIn: "1h" });
     console.log(`${token}`);
@@ -302,6 +303,19 @@ app.get('/exercitii/:lessonId', async (req, res) => {
   }
 });
 
+
+function streamToString(lob) {
+  return new Promise((resolve, reject) => {
+    let data = '';
+    lob.setEncoding('utf8');
+
+    lob.on('data', chunk => data += chunk);
+    lob.on('end', () => resolve(data));
+    lob.on('error', err => reject(err));
+  });
+}
+
+
 app.post("/api/update-progress", async (req, res) => {
   const authHeader = req.headers.authorization;
   if (!authHeader) return res.status(401).json({ message: "Token lipsa" });
@@ -316,49 +330,96 @@ app.post("/api/update-progress", async (req, res) => {
 
   const userId = decoded.userId;
   const { chapterId, lessonId } = req.body;
-  console.log(`---userId----- ${userId}`)
+
+
+  console.log("---VALORI PRIMITE---");
+  console.log("userId:", userId);
+  console.log("chapterId:", chapterId, typeof chapterId);
+  console.log("lessonId:", lessonId, typeof lessonId);
 
   //LOGICA UPDATE ULTIMA LECTIE COMPLETATA DIN CAPITOLUL CURENT
-  try{
-     const connection=await oracledb.getConnection(dbConfig);
+  try {
+    const connection = await oracledb.getConnection(dbConfig);
 
-     const result=await connection.execute(
+    const result = await connection.execute(
       `SELECT last_completed_lessons FROM users WHERE user_id=:userId FOR UPDATE`,
       [userId],
-      {outFormat:oracledb.OUT_FORMAT_OBJECT}
-     );
+      { outFormat: oracledb.OUT_FORMAT_OBJECT }
+    );
+   
 
-     console.log(`---result----- ${result}`)
+    //let jsonStr= result.rows[0]?.LAST_COMPLETED_LESSONS||"{}";
+    let jsonStr = "{}";
+    const lob = result.rows[0]?.LAST_COMPLETED_LESSONS;
 
-     let jsonStr= result.rows[0]?.LAST_COMPLETED_LESSONS||"{}";
-     let progress={};
+    if (lob) {
+      jsonStr = await streamToString(lob);
+    }
 
-     console.log(`---progres----- ${progress}`)
-     try{
-      progress=JSON.parse(jsonStr);
-     }catch(e){
+
+    let progress = {};
+    console.log("---jsonStr (raw JSON din DB)-----", jsonStr);
+
+
+    console.log(`---progres----- ${progress}`)
+    try {
+      progress = JSON.parse(jsonStr);
+    } catch (e) {
       console.error("JSON invalid , resetam....");
-      progress={};
-     }
+      progress = {};
+    }
+    console.log("---progress (parsare JSON)-----", progress);
 
-     const existing=progress[chapterId];
-     if(!existing|| lessonId>existing){
-      progress[chapterId]=lessonId;
-     }
-     console.log(`----progres2---- ${progress}`);
 
-     await connection.execute(
+    const existing = progress[chapterId.toString()];
+
+    console.log(`---existing pentru capitol ${chapterId} este:`, existing);
+
+    if (!existing || lessonId > existing) {
+      progress[chapterId] = lessonId;
+    }
+    console.log(`----progres2---- ${progress}`);
+
+    await connection.execute(
       `UPDATE users SET last_completed_lessons = :json WHERE user_id = :userId`,
       { json: JSON.stringify(progress), userId }
-     );
+    );
 
-     await connection.commit();
+    console.log("---progres final (după modificare)-----", progress);
+    console.log("---json final ce va fi salvat în DB-----", JSON.stringify(progress));
+
+
+    await connection.commit();
     await connection.close();
 
     res.json({ success: true, message: "Progres salvat cu succes." });
-  }catch (err){
-    console.error("Eroare DB:",err);
-    res.status(500).json({success:false,message:"Eroare interna server"});
+  } catch (err) {
+    console.error("Eroare DB:", err);
+    res.status(500).json({ success: false, message: "Eroare interna server" });
+  }
+});
+
+app.get("/api/lesson/:lessonId/chapter", async (req, res) => {
+  const { lessonId } = req.params;
+
+  try {
+    const connection = await oracledb.getConnection(dbConfig);
+    const result = await connection.execute(
+      `SELECT chapter_id FROM lessons WHERE id = :lessonId`,
+      [lessonId],
+      { outFormat: oracledb.OUT_FORMAT_OBJECT }
+    );
+
+    await connection.close();
+
+    if (result.rows.length === 0) {
+      return res.status(404).json({ success: false, message: "Lesson not found" });
+    }
+
+    res.json({ success: true, chapterId: result.rows[0].CHAPTER_ID });
+  } catch (err) {
+    console.error("Eroare DB:", err);
+    res.status(500).json({ success: false, message: "Eroare server" });
   }
 });
 
