@@ -131,59 +131,143 @@ app.post('/register', async (req, res) => {
   }
 });
 
+// app.get('/chapters', async (req, res) => {
+//   let connection;
+//   try {
+//     console.log("Fetching chapters...");
+//     connection = await oracledb.getConnection(dbConfig);
+//     console.log("✅ Connected to Oracle DB");
+
+//     // 1️⃣ Get all chapters
+//     const result = await connection.execute(`SELECT ID, TITLE, DESCRIPTION FROM CHAPTERS ORDER BY ID`);
+
+//     // 2️⃣ Get `last_completed_chapter` from the logged-in user
+//     const authHeader = req.headers.authorization;
+//     if (!authHeader) {
+//       return res.status(401).json({ success: false, message: "No token provided" });
+//     }
+
+//     const token = authHeader.split(" ")[1]; // Extract token
+//     const decoded = jwt.verify(token, "your_secret_key"); // Verify token
+//     const userId = decoded.userId;
+
+//     const userResult = await connection.execute(
+//       `SELECT LAST_COMPLETED_CHAPTER FROM USERS WHERE USER_ID = :userId`,
+//       [userId]
+//     );
+
+//     let lastCompletedChapter = userResult.rows.length > 0 ? userResult.rows[0][0] : 0;
+
+//     console.log(`🔹 User ${userId} last completed chapter:`, lastCompletedChapter);
+
+//     // 3️⃣ Map chapters and mark them as completed
+//     const chapters = result.rows.map(row => ({
+//       id: row[0],
+//       title: row[1],
+//       description: row[2],
+//       completed: row[0] <= lastCompletedChapter // ✅ Mark completed
+//     }));
+
+//     res.json({ success: true, chapters });
+
+//   } catch (error) {
+//     console.error("❌ Database error:", error.message);
+//     res.status(500).json({ success: false, message: "Eroare la extragerea capitolelor", details: error.message });
+//   } finally {
+//     if (connection) {
+//       try {
+//         await connection.close();
+//         console.log("✅ Database connection closed.");
+//       } catch (err) {
+//         console.error("❌ Error closing connection:", err);
+//       }
+//     }
+//   }
+// });
+
 app.get('/chapters', async (req, res) => {
   let connection;
   try {
-    console.log("Fetching chapters...");
     connection = await oracledb.getConnection(dbConfig);
-    console.log("✅ Connected to Oracle DB");
 
-    // 1️⃣ Get all chapters
-    const result = await connection.execute(`SELECT ID, TITLE, DESCRIPTION FROM CHAPTERS ORDER BY ID`);
-
-    // 2️⃣ Get `last_completed_chapter` from the logged-in user
     const authHeader = req.headers.authorization;
     if (!authHeader) {
       return res.status(401).json({ success: false, message: "No token provided" });
     }
 
-    const token = authHeader.split(" ")[1]; // Extract token
-    const decoded = jwt.verify(token, "your_secret_key"); // Verify token
+    const token = authHeader.split(" ")[1];
+    const decoded = jwt.verify(token, "your_secret_key");
     const userId = decoded.userId;
 
+    // Fetch user progress (LOB)
     const userResult = await connection.execute(
-      `SELECT LAST_COMPLETED_CHAPTER FROM USERS WHERE USER_ID = :userId`,
+      `SELECT LAST_COMPLETED_CHAPTER, LAST_COMPLETED_LESSONS FROM USERS WHERE USER_ID = :userId`,
       [userId]
     );
 
-    let lastCompletedChapter = userResult.rows.length > 0 ? userResult.rows[0][0] : 0;
+    let lastCompletedChapter = 0;
+    let completedLessonsJson = {};
 
-    console.log(`🔹 User ${userId} last completed chapter:`, lastCompletedChapter);
+    if (userResult.rows.length > 0) {
+      lastCompletedChapter = userResult.rows[0][0] || 0;
 
-    // 3️⃣ Map chapters and mark them as completed
-    const chapters = result.rows.map(row => ({
-      id: row[0],
-      title: row[1],
-      description: row[2],
-      completed: row[0] <= lastCompletedChapter // ✅ Mark completed
-    }));
+      if (userResult.rows[0][1]) {
+        const lob = userResult.rows[0][1];
+        const lobData = await lob.getData();
+        const jsonData = lobData.toString();
+
+        try {
+          completedLessonsJson = JSON.parse(jsonData);
+        } catch (err) {
+          console.error("❌ Eroare la parsarea LAST_COMPLETED_LESSONS:", err);
+        }
+      }
+    }
+
+    const chaptersResult = await connection.execute(
+      `SELECT ID, TITLE, DESCRIPTION FROM CHAPTERS ORDER BY ID`
+    );
+
+    const chapters = [];
+
+    for (let row of chaptersResult.rows) {
+      const chapterId = row[0];
+
+      const lessonResult = await connection.execute(
+        `SELECT ID, LESSON_NUMBER FROM LESSONS WHERE CHAPTER_ID = :chapterId ORDER BY LESSON_NUMBER`,
+        [chapterId]
+      );
+
+      const lessons = lessonResult.rows;
+      const totalLessons = lessons.length;
+
+      // comparăm lesson_number <= lastCompletedLessons[chapterId]
+      const lastCompleted = completedLessonsJson[chapterId] || 0;
+
+      const completedLessons = lessons.filter(l => l[1] <= lastCompleted).length;
+
+      chapters.push({
+        id: chapterId,
+        title: row[1],
+        description: row[2],
+        completed: chapterId <= lastCompletedChapter,
+        completedLessons,
+        totalLessons
+      });
+    }
 
     res.json({ success: true, chapters });
 
   } catch (error) {
-    console.error("❌ Database error:", error.message);
-    res.status(500).json({ success: false, message: "Eroare la extragerea capitolelor", details: error.message });
+    console.error("❌ Eroare în /chapters:", error);
+    res.status(500).json({ success: false, message: "Eroare internă", details: error.message });
   } finally {
     if (connection) {
-      try {
-        await connection.close();
-        console.log("✅ Database connection closed.");
-      } catch (err) {
-        console.error("❌ Error closing connection:", err);
-      }
+      await connection.close();
     }
   }
 });
+
 
 
 app.get('/lectii/:chapterId', async (req, res) => {
@@ -342,7 +426,7 @@ app.post("/api/update-progress", async (req, res) => {
     const connection = await oracledb.getConnection(dbConfig);
 
     const result = await connection.execute(
-      `SELECT last_completed_lessons FROM users WHERE user_id=:userId FOR UPDATE`,
+      `SELECT last_completed_lessons,last_completed_chapter FROM users WHERE user_id=:userId FOR UPDATE`,
       [userId],
       { outFormat: oracledb.OUT_FORMAT_OBJECT }
     );
@@ -388,6 +472,15 @@ app.post("/api/update-progress", async (req, res) => {
     console.log("---progres final (după modificare)-----", progress);
     console.log("---json final ce va fi salvat în DB-----", JSON.stringify(progress));
 
+    if (progress[chapterId] >= 11) {
+      console.log(`✅ User ${userId} a completat toate lecțiile din capitolul ${chapterId}. Se actualizează last_completed_chapter.`);
+    
+      await connection.execute(
+        `UPDATE users SET last_completed_chapter = :chapterId WHERE user_id = :userId`,
+        { chapterId, userId }
+      );
+    }
+    
 
     await connection.commit();
     await connection.close();

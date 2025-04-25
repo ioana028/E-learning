@@ -1,7 +1,6 @@
 /* Stil general */
 body {
     background-color: #f3ead8;
-    font-family: "Arial", sans-serif;
     margin: 0;
     padding: 0;
   }
@@ -9,29 +8,11 @@ body {
   /* Container general */
   .chapters-container {
     display: flex;
-    height: 100vh;
+    
+    
   }
   
-  /* Sidebar */
-  .sidebar {
-    width: 250px;
-    background: #fdf6e3;
-    padding: 20px;
-    border-right: 2px solid #c4a484;
-    box-shadow: 3px 0 10px rgba(0, 0, 0, 0.1);
-  }
-  
-  .sidebar-title {
-    font-size: 22px;
-    font-weight: bold;
-    color: #4a3f35;
-    margin-bottom: 20px;
-  }
-  
-  .sidebar-menu {
-    list-style: none;
-    padding: 0;
-  }
+ 
   
   .sidebar-menu li {
     padding: 12px;
@@ -47,10 +28,11 @@ body {
   /* Conținut principal */
   .chapters-content {
     flex: 1;
-    padding: 20px;
+    padding: 30px;
     display: flex;
     flex-direction: column;
     align-items: center;
+    margin-right: 90px;
   }
   
   /* Titlul paginii */
@@ -63,6 +45,10 @@ body {
   
   /* Lista capitolelor */
   .chapters-list {
+    font-size: 16px;
+    font-weight: bold;
+    font-family: Georgia, 'Times New Roman', Times, serif;
+    color:rgb(74, 63, 53);
     display: flex;
     flex-direction: column;
     gap: 15px;
@@ -72,28 +58,63 @@ body {
   
   /* Capitol */
   .chapter-item {
-    background: #ffffff;
-    border-radius: 12px;
-    padding: 15px;
+    background: #fdf7ee;
+    border-radius: 30px;
+    flex-direction: row;
+    align-items: stretch;
+    padding: 25px ;
     display: flex;
     justify-content: space-between;
-    align-items: center;
-    box-shadow: 0 3px 10px rgba(0, 0, 0, 0.1);
+    align-items: flex-start;
+    flex-wrap: wrap;
+    gap: 20px;
+    box-shadow: 0 3px 10px rgba(0, 0, 0, 0.2);
     cursor: pointer;
     border: 2px solid #c4a484;
     transition: transform 0.2s, background 0.3s;
+    min-height: 200px;
+    max-width: 1500px;
+  }
+
+  .chapter-left {
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    gap: 12px;
+    flex: 1;
   }
   
+  .chapter-right {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+  }
+
+  .chapter-item.completed {
+    border: 2px solid #669a36; /* verde */
+    background-color: #eff6e0;
+    
+  }
+  .chapter-item.completed:hover {
+    background: #d6e7bd;
+  }
+  
+  
   .chapter-item:hover {
-    transform: scale(1.02);
-    background: #f8e9d1;
+    transform: scale(1.06);
+    /* background: #f8e9d1; */
   }
   
   /* Text capitol */
   .chapter-info h2 {
-    margin: 0;
-    font-size: 18px;
+    margin-bottom: 2px;
+    font-size: 25px;
+    font-family:sans-serif;
+    font-weight: bold;
     color: #4a3f35;
+   
   }
   
   /* Status */
@@ -105,27 +126,184 @@ body {
   }
   
   .status.completed {
-    color: green;
+    color: rgb(2, 137, 2);
   }
   
   .status.pending {
     color: #ff9900;
   }
   
+  .back-bar {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 16px;
+    font-weight: bold;
+    color: #4a3f35;
+    cursor: pointer;
+    margin-bottom: 25px;
+    border-bottom: 1px solid #4a3f35;
+    padding-bottom: 10px;
+    width: 100%;
+    max-width: 600px;
+  }
+  
+  .back-arrow {
+    font-size: 18px;
+  }
+  
   /* Buton de start */
   .start-button {
-    background: #007bff;
-    color: white;
-    border: none;
+    background: #ffffff;
+    color: rgb(0, 0, 0);
+    border: 0.1px solid #000000;
     padding: 8px 15px;
     border-radius: 8px;
     font-size: 14px;
     font-weight: bold;
     cursor: pointer;
     transition: background 0.2s;
+    margin-top: auto; 
   }
   
+  .start-button.replay {
+    background-color: #d0f0be;
+    color: black;
+    border: 1px solid #2f6b25;
+  }
+
+  .start-button.replay:hover {
+    background: #9cb989;
+  }
+
   .start-button:hover {
-    background: #0056b3;
+    background: #dae9c6;
+    
   }
   
+
+  .DotLottieReact {
+    margin-bottom: 10px;
+    display: flex;
+    justify-content: center;
+  }
+  
+
+  /* progress bar*/
+  .progress-bar-container {
+    margin-top: 10px;
+    margin-bottom: 45px;
+  }
+  
+  .progress-bar {
+    width: 100%;
+    height: 10px;
+    background: linear-gradient(to bottom, #dcdcdc, #eeeded);
+    border-radius: 7px;
+    box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.2);
+    overflow: hidden;
+    position: relative;
+    
+  }
+  
+  .progress-fill {
+    height: 100%;
+  background: linear-gradient(to bottom, #56ab2f, #a8e063); /* verde 3D */
+  box-shadow: inset 0 -1px 0 rgba(255, 255, 255, 0.4), inset 0 1px 1px rgba(0, 0, 0, 0.1);
+  transition: width 0.4s ease;
+  border-radius: 7px 5px 5px 7px;
+  }
+  .progress-bar-container .progress-text {
+    font-size: 12px;
+    margin-top: 4px;
+    color: #333;
+    text-align: right;
+  }
+  
+  .progress-text {
+    font-size: 12px;
+    margin-top: 4px;
+    color: #333;
+    display: block;
+    text-align: right;
+  }
+  
+  /*imagine si mesaj*/
+  .chapter-visuals {
+    display: flex;
+    align-items: flex-end;
+    gap: 10px;
+    margin-top: 10px;
+  }
+  
+  .chapter-image {
+    width: 120px;
+    height: auto;
+  }
+  
+  .speech-bubble {
+    background: #fff;
+    border-radius: 12px;
+    padding: 10px 14px;
+    position: relative;
+    max-width: 250px;
+    font-size: 14px;
+    box-shadow: 0 2px 5px rgba(0,0,0,0.15);
+  }
+  
+  .speech-bubble::after {
+    content: '';
+    position: absolute;
+    bottom: -10px;
+    left: 20px;
+    border-width: 10px 10px 0;
+    border-style: solid;
+    border-color: #fff transparent;
+    display: block;
+    width: 0;
+  }
+  
+
+  /* user */.top-bar {
+  position: fixed;
+  top: 20px;
+  right: 20px;
+  z-index: 1000;
+}
+
+.user-profile {
+  display: flex;
+  align-items: center;
+  background: #fff;
+  padding: 8px 12px;
+  border-radius: 20px;
+  box-shadow: 0 2px 6px rgba(0,0,0,0.1);
+  gap: 10px;
+}
+
+.profile-picture {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  object-fit: cover;
+  border: 1px solid #ccc;
+}
+
+.user-info {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+}
+
+.username {
+  font-weight: 600;
+  font-size: 14px;
+  margin: 0;
+  color: #333;
+}
+
+.xp {
+  font-size: 12px;
+  color: #666;
+  margin: 0;
+}
