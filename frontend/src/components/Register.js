@@ -25,10 +25,11 @@ const Register = () => {
       console.log("Răspuns întreg de la server:", response); // Vezi structura răspunsului
       console.log("Răspuns JSON:", response.data); // Vezi ce trimite backend-ul
   
-      if (response.data.success) {
-        console.log("Înregistrare reușită! Redirecționez către login...");
-        navigate("/login");
-      } else {
+      if (response.data.success && response.data.token) {
+        localStorage.setItem("token", response.data.token); // salvează tokenul
+        navigate("/set-level"); // redirecționează spre componenta nouă
+      }
+       else {
         setError(response.data.message || "Înregistrare eșuată.");
       }
     } catch (err) {

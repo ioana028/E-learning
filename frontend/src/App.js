@@ -6,6 +6,7 @@ import Chapters from './components/Chapters';
 import Welcome from './components/Welcome';
 import Register from './components/Register';
 import Exercitii from './components/Exercitii';
+import SetLevel from './components/SetLevel';
 
 
 const App = () => (
@@ -17,6 +18,8 @@ const App = () => (
       <Route path="/chapters" element={<Chapters />} />
       <Route path="/lectii/:chapterId" element={<Lectii />} />
       <Route path="/exercitii/:lessonId" element={<Exercitii />} />
+      <Route path="/set-level" element={<SetLevel />} />
+
     </Routes>
   </Router>
 );

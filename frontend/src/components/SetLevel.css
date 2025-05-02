@@ -1,0 +1,91 @@
+.set-level-container {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    min-height: 100vh;
+    
+  }
+  
+  .set-level-form {
+    font-size: 24px;
+    color: #4a3f35;
+    font-weight: bold;
+    margin-bottom: 20px;
+    background-color: #fdf6e3;
+    padding: 30px;
+    border-radius: 12px;
+    box-shadow: 5px 5px 15px rgba(0, 0, 0, 0.1);
+    border: 2px solid #c4a484;
+    width: 350px;
+    text-align: center;
+  }
+  
+  .set-level-form h2 {
+    margin-bottom: 20px;
+    color: #333;
+    font-size: 22px;
+  }
+  
+  .set-level-form select {
+    width: 100%;
+    padding: 12px;
+    margin-bottom: 20px;
+    border: 2px solid #ddd;
+    border-radius: 8px;
+    font-size: 16px;
+  }
+  
+  .set-level-form button {
+    width: 100%;
+    padding: 10px;
+    background-color: #c4a484;
+    color: #fff9ec;
+    border: none;
+    border-radius: 8px;
+    font-size: 16px;
+    font-weight: bold;
+    cursor: pointer;
+  }
+  
+  .set-level-form button:hover {
+    background-color: #a88d6f;
+  }
+  
+
+  .level-options {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 12px;
+    justify-content: center;
+    margin-bottom: 20px;
+  }
+  
+  .level-option {
+    padding: 10px 18px;
+    border: 2px solid #ccc;
+    border-radius: 20px;
+    cursor: pointer;
+    font-weight: bold;
+    background-color: #f9f9f9;
+    transition: all 0.3s ease;
+    user-select: none;
+    font-size: 16px ;
+  text-align: left;
+ justify-content: left;
+  }
+  
+  .level-option input {
+    display: none;
+  }
+  
+  .level-option:hover {
+    border-color: #4CAF50;
+    background-color: #e7ffe7;
+  }
+  
+  .level-option.selected {
+    background-color: #4CAF50;
+    color: white;
+    border-color: #4CAF50;
+  }
+  

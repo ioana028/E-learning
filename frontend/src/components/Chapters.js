@@ -2,6 +2,8 @@ import React, { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import axios from "axios";
 import "./Chapters.css"; // Import stilul separat
+import {jwtDecode} from "jwt-decode";
+
 
 //import { DotLottieReact } from '@lottiefiles/dotlottie-react';
 const chapterImages = {
@@ -19,6 +21,13 @@ const Chapters = () => {
   
   const navigate = useNavigate();
   const [chapters, setChapters] = useState([]);
+  const token = localStorage.getItem("token");
+  let username = "Utilizator";
+
+  if (token) {
+    const decoded = jwtDecode(token);
+    username = decoded.username;
+  }
 
   // Fetch chapters from backend
   useEffect(() => {
@@ -57,7 +66,7 @@ const Chapters = () => {
       className="profile-picture"
     />
     <div className="user-info">
-      <p className="username">student1</p>
+      <p className="username">{username}</p>
       <p className="xp">XP: 0</p>
     </div>
   </div>

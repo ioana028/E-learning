@@ -39,7 +39,7 @@ app.post('/login', async (req, res) => {
     const user = result.rows[0];
     const userId = user.USER_ID;
 
-    const token = jwt.sign({ userId }, SECRET_KEY, { expiresIn: "1h" });
+    const token = jwt.sign({ userId, username }, SECRET_KEY, { expiresIn: "1h" });
     console.log(`${token}`);
 
     console.log("Login success! Token generated:", token);
@@ -109,7 +109,7 @@ app.post('/register', async (req, res) => {
     //const userId = result.outBinds.userId[0];
 
     // 🔹 Generează un token JWT
-    const token = jwt.sign({ userId }, SECRET_KEY, { expiresIn: "1h" });
+    const token = jwt.sign({ userId, username }, SECRET_KEY, { expiresIn: "1h" });
     console.log("Cont creat cu succes! Token generat:", token);
 
     // Răspuns cu token-ul generat
@@ -131,59 +131,36 @@ app.post('/register', async (req, res) => {
   }
 });
 
-// app.get('/chapters', async (req, res) => {
-//   let connection;
-//   try {
-//     console.log("Fetching chapters...");
-//     connection = await oracledb.getConnection(dbConfig);
-//     console.log("✅ Connected to Oracle DB");
+app.post("/set-level", async (req, res) => {
+  const authHeader = req.headers.authorization;
+  if (!authHeader) return res.status(401).json({ message: "Lipsește tokenul" });
 
-//     // 1️⃣ Get all chapters
-//     const result = await connection.execute(`SELECT ID, TITLE, DESCRIPTION FROM CHAPTERS ORDER BY ID`);
+  const token = authHeader.split(" ")[1];
+  let decoded;
+  try {
+    decoded = jwt.verify(token, SECRET_KEY);
+  } catch {
+    return res.status(403).json({ message: "Token invalid" });
+  }
 
-//     // 2️⃣ Get `last_completed_chapter` from the logged-in user
-//     const authHeader = req.headers.authorization;
-//     if (!authHeader) {
-//       return res.status(401).json({ success: false, message: "No token provided" });
-//     }
+  const { level } = req.body;
+  const userId = decoded.userId;
 
-//     const token = authHeader.split(" ")[1]; // Extract token
-//     const decoded = jwt.verify(token, "your_secret_key"); // Verify token
-//     const userId = decoded.userId;
+  try {
+    const connection = await oracledb.getConnection(dbConfig);
+    await connection.execute(
+      `UPDATE users SET english_level = :level WHERE user_id = :userId`,
+      { level, userId }
+    );
+    await connection.commit();
+    await connection.close();
 
-//     const userResult = await connection.execute(
-//       `SELECT LAST_COMPLETED_CHAPTER FROM USERS WHERE USER_ID = :userId`,
-//       [userId]
-//     );
-
-//     let lastCompletedChapter = userResult.rows.length > 0 ? userResult.rows[0][0] : 0;
-
-//     console.log(`🔹 User ${userId} last completed chapter:`, lastCompletedChapter);
-
-//     // 3️⃣ Map chapters and mark them as completed
-//     const chapters = result.rows.map(row => ({
-//       id: row[0],
-//       title: row[1],
-//       description: row[2],
-//       completed: row[0] <= lastCompletedChapter // ✅ Mark completed
-//     }));
-
-//     res.json({ success: true, chapters });
-
-//   } catch (error) {
-//     console.error("❌ Database error:", error.message);
-//     res.status(500).json({ success: false, message: "Eroare la extragerea capitolelor", details: error.message });
-//   } finally {
-//     if (connection) {
-//       try {
-//         await connection.close();
-//         console.log("✅ Database connection closed.");
-//       } catch (err) {
-//         console.error("❌ Error closing connection:", err);
-//       }
-//     }
-//   }
-// });
+    res.json({ success: true });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ message: "Eroare la actualizarea nivelului" });
+  }
+});
 
 app.get('/chapters', async (req, res) => {
   let connection;
