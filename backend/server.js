@@ -16,6 +16,21 @@ const dbConfig = {
   password: 'raduioanA123',
   connectString: 'localhost/orclpdb'
 };
+function mapLevelToDifficulty(level) {
+  switch (level) {
+    case 'A1':
+    case 'A2':
+      return 'usor';
+    case 'B1':
+    case 'B2':
+      return 'mediu';
+    case 'C1':
+    case 'C2':
+      return 'greu';
+    default:
+      return 'usor'; // fallback
+  }
+}
 
 app.post('/login', async (req, res) => {
   const { username, password } = req.body;
@@ -130,7 +145,6 @@ app.post('/register', async (req, res) => {
     }
   }
 });
-
 app.post("/set-level", async (req, res) => {
   const authHeader = req.headers.authorization;
   if (!authHeader) return res.status(401).json({ message: "Lipsește tokenul" });
@@ -145,13 +159,19 @@ app.post("/set-level", async (req, res) => {
 
   const { level } = req.body;
   const userId = decoded.userId;
-
+ console.log(level);
+ console.log(userId);
   try {
     const connection = await oracledb.getConnection(dbConfig);
     await connection.execute(
-      `UPDATE users SET english_level = :level WHERE user_id = :userId`,
-      { level, userId }
+      `UPDATE users SET english_level = :engLevel WHERE user_id = :userId`,
+      {
+        engLevel: level,
+        userId: userId
+      }
     );
+    
+    
     await connection.commit();
     await connection.close();
 
@@ -161,7 +181,37 @@ app.post("/set-level", async (req, res) => {
     res.status(500).json({ message: "Eroare la actualizarea nivelului" });
   }
 });
+app.post("/api/log-error", async (req, res) => {
+  const authHeader = req.headers.authorization;
+  if (!authHeader) return res.status(401).json({ message: "Lipsește tokenul" });
 
+  const token = authHeader.split(" ")[1];
+  let decoded;
+  try {
+    decoded = jwt.verify(token, SECRET_KEY);
+  } catch {
+    return res.status(403).json({ message: "Token invalid" });
+  }
+
+  const userId = decoded.userId;
+  const { exerciseId, topic, difficulty } = req.body;
+
+  try {
+    const connection = await oracledb.getConnection(dbConfig);
+    await connection.execute(
+      `INSERT INTO user_errors (user_id, exercise_id, topic, difficulty) 
+       VALUES (:userId, :exerciseId, :topic, :difficulty)`,
+      { userId, exerciseId, topic, difficulty }
+    );
+    await connection.commit();
+    await connection.close();
+
+    res.json({ success: true, message: "Eroarea a fost salvată" });
+  } catch (err) {
+    console.error("❌ Eroare la salvarea greșelii:", err);
+    res.status(500).json({ message: "Eroare la salvarea greșelii" });
+  }
+});
 app.get('/chapters', async (req, res) => {
   let connection;
   try {
@@ -244,9 +294,6 @@ app.get('/chapters', async (req, res) => {
     }
   }
 });
-
-
-
 app.get('/lectii/:chapterId', async (req, res) => {
   let connection;
   const { chapterId } = req.params;
@@ -344,9 +391,37 @@ app.get('/exercitii/:lessonId', async (req, res) => {
   connection = await oracledb.getConnection(dbConfig);
   console.log("✅ -----Connected to Oracle DB");
   try {
+    console.log("🔧 A intrat în try");
+    const authHeader = req.headers.authorization;
+    if (!authHeader) {
+      return res.status(401).json({ success: false, message: "No token provided" });
+    }
+    console.log("🔧 A intrat în try2");
+    const token = authHeader.split(" ")[1];
+    const decoded = jwt.verify(token, SECRET_KEY);
+    const userId = decoded.userId;
+    const userLevelResult = await connection.execute(
+      `SELECT english_level FROM users WHERE user_id = :userId`,
+      { userId }
+    );
+    console.log("🔧 A intrat în try3");
+
+    const userLevel = userLevelResult.rows[0][0]; // ex: "B1"
+    const difficulty = mapLevelToDifficulty(userLevel); // ex: "mediu"
+     // 🔍 AICI PUI LOGURILE DE DEBUG
+  console.log("🔎 User Level:", userLevel);
+  console.log("🔎 Difficulty folosit:", difficulty);
+  console.log("🔎 Lesson ID:", lessonId);
+    console.log(`======================================🔍 User ${userId} level: ${userLevel}, mapped difficulty: ${difficulty}`);
     // Query pentru a obține exercițiile asociate lecției
     const result = await connection.execute(
-      'SELECT TYPE,LESSON_ID,QUESTION,OPTIONS,ANSWER FROM exercises WHERE lesson_id = :lessonId', [lessonId]
+      `SELECT TYPE, LESSON_ID, QUESTION, OPTIONS, ANSWER, DIFFICULTY, TOPIC, ID
+       FROM exercises
+       WHERE lesson_id = :lessonId AND difficulty = :difficulty`,
+      {
+        lessonId: parseInt(lessonId),
+        difficulty
+      }
     );
     console.log("--------Exercitiile au fost preluate", result.rows);
 
@@ -363,6 +438,72 @@ app.get('/exercitii/:lessonId', async (req, res) => {
     return res.status(500).json({ success: false, message: 'Server error while fetching exercises' });
   }
 });
+
+
+// app.get('/exercitii/:lessonId', async (req, res) => {
+//   let connection;
+//   const { lessonId } = req.params;
+
+//   if (!lessonId) {
+//     return res.status(400).json({ success: false, message: 'Lesson ID is required' });
+//   }
+
+//   try {
+//     // 🔐 Token și userId
+//     const authHeader = req.headers.authorization;
+//     if (!authHeader) {
+//       return res.status(401).json({ success: false, message: "No token provided" });
+//     }
+
+//     const token = authHeader.split(" ")[1];
+//     const decoded = jwt.verify(token, SECRET_KEY);
+//     const userId = decoded.userId;
+
+//     connection = await oracledb.getConnection(dbConfig);
+//     console.log("✅ Connected to Oracle DB");
+
+//     // 🔎 Obține nivelul de engleză al utilizatorului
+//     const userLevelResult = await connection.execute(
+//       `SELECT english_level FROM users WHERE user_id = :userId`,
+//       { userId }
+//     );
+
+//     const userLevel = userLevelResult.rows[0][0]; // ex: "B1"
+//     const difficulty = mapLevelToDifficulty(userLevel); // ex: "mediu"
+
+//     console.log(`🔍 User ${userId} level: ${userLevel}, mapped difficulty: ${difficulty}`);
+
+//     // 📦 Ia exercițiile corespunzătoare
+//     const result = await connection.execute(
+//       `SELECT TYPE, LESSON_ID, QUESTION, OPTIONS, ANSWER, DIFFICULTY, TOPIC
+//        FROM exercises
+//        WHERE lesson_id = :lessonId AND difficulty = :difficulty`,
+//       {
+//         lessonId: parseInt(lessonId),
+//         difficulty
+//       }
+//     );
+
+//     if (result.rows.length > 0) {
+//       return res.json({ success: true, exercises: result });
+//     } else {
+//       return res.status(404).json({ success: false, message: 'No exercises found for this lesson and difficulty' });
+//     }
+
+//   } catch (error) {
+//     console.error("❌ Error fetching exercises:", error);
+//     return res.status(500).json({ success: false, message: 'Server error while fetching exercises' });
+//   } finally {
+//     if (connection) {
+//       try {
+//         await connection.close();
+//         console.log("✅ Connection closed");
+//       } catch (err) {
+//         console.error("❌ Error closing connection:", err);
+//       }
+//     }
+//   }
+// });
 
 
 function streamToString(lob) {

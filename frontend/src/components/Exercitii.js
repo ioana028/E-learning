@@ -43,7 +43,12 @@ const Exercitii = () => {
   useEffect(() => {
     const fetchExercises = async () => {
       try {
-        const response = await axios.get(`http://localhost:5000/exercitii/${lessonId}`);
+        const response = await axios.get(`http://localhost:5000/exercitii/${lessonId}`, {
+          headers: {
+            Authorization: `Bearer ${localStorage.getItem("token")}`
+          }
+        });
+        
         if (response.data.success) {
           setExercises(response.data.exercises.rows);
         }
@@ -54,6 +59,7 @@ const Exercitii = () => {
 
     fetchExercises();
   }, [lessonId]);
+  
 
   useEffect(() => {
     const fetchChapterId = async () => {
@@ -120,6 +126,22 @@ const Exercitii = () => {
     setSelectedOption(option);
   };
 
+  const logExerciseError = async (exerciseId, topic, difficulty) => {
+    try {
+      await axios.post("http://localhost:5000/api/log-error", {
+        exerciseId,
+        topic,
+        difficulty
+      }, {
+        headers: {
+          Authorization: `Bearer ${localStorage.getItem("token")}`
+        }
+      });
+    } catch (error) {
+      console.error("❌ Eroare la logarea greșelii:", error);
+    }
+  };
+
   const handleCheckAnswer = (correctAnswer) => {
     if (selectedOption) {
       setIsChecked(true);
@@ -128,9 +150,19 @@ const Exercitii = () => {
         setCorrectAnswers(correctAnswers + 1);
       } else {
         setIsCorrect(false);
+  
+        // 👇 Logăm greșeala în DB
+        const currentExercise = exercises[currentIndex];
+        const exerciseId = currentExercise[7];       // LESSON_ID
+        const topic = currentExercise[6];            // Topic din coloana 6
+        const difficulty = currentExercise[5];       // Dificultate din coloana 5
+        logExerciseError(exerciseId, topic, difficulty);
+        console.log("+0",currentExercise[0],"+1",currentExercise[1],"+2",currentExercise[2],"+3",currentExercise[3],"+4",currentExercise[4]);
+        console.log("+5",currentExercise[5],"+6",currentExercise[6],"+7",currentExercise[7],"+8",currentExercise[8],"+9",currentExercise[9]);
       }
     }
   };
+  
 
   const handleFinish = async () => {
     setShowResult(true);
@@ -168,6 +200,9 @@ const Exercitii = () => {
     if (type !== 2) return [];
     return shuffleArray(options.split(","));
   }, [exercises, currentIndex]);
+
+  
+  
 
   const renderExercise = (exercise) => {
     const [type, , question, options, answer] = exercise;
@@ -231,11 +266,21 @@ const Exercitii = () => {
           setIsChecked(true);
           const isCorrectAnswer = userAnswer.trim().toLowerCase() === answer.trim().toLowerCase();
           setIsCorrect(isCorrectAnswer);
+        
           if (isCorrectAnswer) {
             setCorrectAnswers(correctAnswers + 1);
+          } else {
+            // 🔴 Logare greșeală dacă propoziția este greșită
+            const currentExercise = exercises[currentIndex];
+            const exerciseId = currentExercise[7];       // LESSON_ID
+            const topic = currentExercise[6];            // Topic
+            const difficulty = currentExercise[5];       // Difficulty
+            logExerciseError(exerciseId, topic, difficulty);
           }
+        
           setFeedbackShown(true);
         };
+        
 
         const handleResetSentence = () => {
           setUserSentence([]);
@@ -395,13 +440,25 @@ const Exercitii = () => {
             const found = pairs.find(p => p.left === pair.left && p.right === pair.right);
             return { ...pair, correct: !!found };
           });
+        
           setMatchResults(results);
+        
           const correctCount = results.filter(r => r.correct).length;
+        
           if (correctCount === pairs.length) {
             setCorrectAnswers(correctAnswers + 1);
+          } else {
+            // 🔴 Dacă nu e totul corect, trimite log
+            const currentExercise = exercises[currentIndex];
+            const exerciseId = currentExercise[7];
+            const topic = currentExercise[6];
+            const difficulty = currentExercise[5];
+            logExerciseError(exerciseId, topic, difficulty);
           }
+        
           setIsChecked(true);
         };
+        
 
         const getResultFor = (left, right) => {
           const result = matchResults.find(r => r.left === left && r.right === right);
@@ -549,6 +606,7 @@ const Exercitii = () => {
         return <p>Tip necunoscut de exercițiu.</p>;
     }
   };
+  
 
   if (exercises.length === 0) return <p>Se încarcă exercițiile...</p>;
 
