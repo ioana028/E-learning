@@ -658,3 +658,44 @@ app.listen(5000, () => console.log('Backend running on http://localhost:5000'));
 //destructuring assignment -- req.params este un obiect care contine parametrii din URL-ul cererii
 //de exemplu pt ruta /lectii/5  { chapterId: '5' }
 //deci { chapterId } este sintaxa de destructurare a obiectului din req.params asociata cheii chapterId
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+//ml 
+const { exec } = require("child_process");
+
+app.get("/api/predict-level/:userId", async (req, res) => {
+  const userId = req.params.userId;
+
+  // rulează scriptul Python și îi trimite userId ca argument
+  const command = `python ./ml/predict_user_level.py ${userId}`;
+
+  exec(command, (error, stdout, stderr) => {
+    if (error) {
+      console.error(`❌ Eroare la rularea scriptului: ${error.message}`);
+      return res.status(500).json({ success: false, message: "Eroare la script" });
+    }
+
+    if (stderr) {
+      console.error(`⚠️ STDERR: ${stderr}`);
+    }
+
+    console.log("📤 Output din script:", stdout);
+    res.json({ success: true, output: stdout });
+  });
+});

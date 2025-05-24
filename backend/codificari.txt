@@ -1,0 +1,4 @@
+
+
+antrenare model: python ml/train_model.py
+testare predictie: python ml/predict_user_level.py 1
