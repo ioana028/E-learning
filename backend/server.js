@@ -5,6 +5,8 @@ const oracledb = require('oracledb');
 const bcrypt = require("bcrypt");
 const jwt = require("jsonwebtoken");
 const SECRET_KEY = "your_secret_key";
+const { exec } = require("child_process");  //pt ml
+
 
 const app = express();
 app.use(cors());
@@ -159,8 +161,8 @@ app.post("/set-level", async (req, res) => {
 
   const { level } = req.body;
   const userId = decoded.userId;
- console.log(level);
- console.log(userId);
+  console.log(level);
+  console.log(userId);
   try {
     const connection = await oracledb.getConnection(dbConfig);
     await connection.execute(
@@ -170,8 +172,8 @@ app.post("/set-level", async (req, res) => {
         userId: userId
       }
     );
-    
-    
+
+
     await connection.commit();
     await connection.close();
 
@@ -408,10 +410,10 @@ app.get('/exercitii/:lessonId', async (req, res) => {
 
     const userLevel = userLevelResult.rows[0][0]; // ex: "B1"
     const difficulty = mapLevelToDifficulty(userLevel); // ex: "mediu"
-     // 🔍 AICI PUI LOGURILE DE DEBUG
-  console.log("🔎 User Level:", userLevel);
-  console.log("🔎 Difficulty folosit:", difficulty);
-  console.log("🔎 Lesson ID:", lessonId);
+    // 🔍 AICI PUI LOGURILE DE DEBUG
+    console.log("🔎 User Level:", userLevel);
+    console.log("🔎 Difficulty folosit:", difficulty);
+    console.log("🔎 Lesson ID:", lessonId);
     console.log(`======================================🔍 User ${userId} level: ${userLevel}, mapped difficulty: ${difficulty}`);
     // Query pentru a obține exercițiile asociate lecției
     const result = await connection.execute(
@@ -548,7 +550,7 @@ app.post("/api/update-progress", async (req, res) => {
       [userId],
       { outFormat: oracledb.OUT_FORMAT_OBJECT }
     );
-   
+
 
     //let jsonStr= result.rows[0]?.LAST_COMPLETED_LESSONS||"{}";
     let jsonStr = "{}";
@@ -592,18 +594,30 @@ app.post("/api/update-progress", async (req, res) => {
 
     if (progress[chapterId] >= 11) {
       console.log(`✅ User ${userId} a completat toate lecțiile din capitolul ${chapterId}. Se actualizează last_completed_chapter.`);
-    
+
       await connection.execute(
         `UPDATE users SET last_completed_chapter = :chapterId WHERE user_id = :userId`,
         { chapterId, userId }
       );
     }
-    
+
 
     await connection.commit();
     await connection.close();
+    //ml
+    // ✅ Rulează modelul ML după fiecare actualizare
+    const cmd = `python ./ml/predict_user_level.py ${userId}`;
+    exec(cmd, (error, stdout, stderr) => {
+      if (error) {
+        console.error("❌ Eroare la rularea scriptului ML:", error.message);
+      } else {
+        console.log("✅ Script ML executat cu succes:", stdout);
+      }
+    });
 
     res.json({ success: true, message: "Progres salvat cu succes." });
+    //ml
+
   } catch (err) {
     console.error("Eroare DB:", err);
     res.status(500).json({ success: false, message: "Eroare interna server" });
@@ -677,7 +691,7 @@ app.listen(5000, () => console.log('Backend running on http://localhost:5000'));
 
 
 //ml 
-const { exec } = require("child_process");
+//const { exec } = require("child_process");
 
 app.get("/api/predict-level/:userId", async (req, res) => {
   const userId = req.params.userId;

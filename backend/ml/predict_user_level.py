@@ -3,10 +3,11 @@ import cx_Oracle
 from joblib import load
 import numpy as np
 import sys
+from sklearn.preprocessing import LabelEncoder
 
 # ✅ Primește user_id din linia de comandă
 if len(sys.argv) < 2:
-    print("❌ Trebuie să specifici user_id. Ex: python predict_user_level.py 3")
+    print(" Trebuie să specifici user_id. Ex: python predict_user_level.py 3")
     sys.exit(1)
 
 user_id = int(sys.argv[1])
@@ -29,45 +30,45 @@ WHERE user_id = :user_id
 GROUP BY topic, difficulty
 """
 
-#df = pd.read_sql(query, con=connection, params={"user_id": user_id})
 df = pd.read_sql(query, con=connection, params={"user_id": user_id})
-df.columns = df.columns.str.lower()  # 🔁 transformă toate coloanele în lowercase
+df.columns = df.columns.str.lower()  # 🔁 transformă coloanele în lowercase
 
-print("📊 Coloane returnate:", df.columns)
+print(" Coloane returnate:", df.columns)
 print(df.head())
 
 if df.empty:
-    print(f"❌ Utilizatorul {user_id} nu are erori înregistrate.")
-else:
-    # Encodează topic & difficulty
-    df['topic_encoded'] = le_topic.transform(df['topic'])
-    df['difficulty_encoded'] = le_diff.transform(df['difficulty'])
-   
-    # # Filtrăm doar rândurile ale căror valori sunt cunoscute de encoder
-    # df = df[df['TOPIC'].isin(le_topic.classes_)]
-    # df = df[df['DIFFICULTY'].isin(le_diff.classes_)]
+    print(f" Utilizatorul {user_id} nu are erori înregistrate.")
+    connection.close()
+    sys.exit(0)
 
-    # df['topic_encoded'] = le_topic.transform(df['TOPIC'])
-    # df['difficulty_encoded'] = le_diff.transform(df['DIFFICULTY'])
+# 🔒 Funcție helper pentru encodare sigură
+def safe_encode(encoder, value):
+    if value in encoder.classes_:
+        return encoder.transform([value])[0]
+    else:
+        print(f"⚠️ Valoare necunoscută: '{value}' — fallback -1")
+        return -1
 
-    # Pregătește X pentru predicție
-    X = df[['topic_encoded', 'difficulty_encoded', 'error_count']]
-    # X = df[['topic_encoded', 'difficulty_encoded', 'ERROR_COUNT']]
+# ⬇️ Encodăm topic și difficulty în siguranță
+df['topic_encoded'] = df['topic'].apply(lambda x: safe_encode(le_topic, x))
+df['difficulty_encoded'] = df['difficulty'].apply(lambda x: safe_encode(le_diff, x))
 
-    # Prezicere
-    preds = model.predict(X)
-    pred_final = np.bincount(preds).argmax()
-    level_decoded = le_level.inverse_transform([pred_final])[0]
+# 🧪 Construim X pentru predicție
+X = df[['topic_encoded', 'difficulty_encoded', 'error_count']]
 
-    print(f"✅ Nivel prezis pentru userul {user_id}: {level_decoded}")
+# 🔮 Prezicere
+preds = model.predict(X)
+pred_final = np.bincount(preds).argmax()
+level_decoded = le_level.inverse_transform([pred_final])[0]
 
-    # Update în tabela USERS
-    update_cursor = connection.cursor()
-    update_cursor.execute("""
+print(f" Nivel prezis pentru userul {user_id}: {level_decoded}")
+
+# 📝 Actualizează în tabela USERS
+update_cursor = connection.cursor()
+update_cursor.execute("""
     UPDATE users SET english_level = :a WHERE user_id = :b
 """, {"a": level_decoded, "b": user_id})
 
-    connection.commit()
-    print("✅ Nivel actualizat în tabela USERS.")
-
+connection.commit()
+print(" Nivel actualizat în tabela USERS.")
 connection.close()
