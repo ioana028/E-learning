@@ -12,8 +12,8 @@ CREATE TABLE users (
   email VARCHAR2(100),
   role VARCHAR2(20) DEFAULT 'student', -- rolul utilizatorului: student/admin/profesor
   last_completed_chapter NUMBER(2) DEFAULT 0,
-  LAST_COMPLETED_LESSONS CLOB
-  english_level VARCHAR2(10);
+  LAST_COMPLETED_LESSONS CLOB,
+  english_level VARCHAR2(10)
 );
 -- alter table users drop column last_completed_lesson;
 --ALTER TABLE USERS ADD LAST_COMPLETED_LESSONS CLOB; -- Store JSON
@@ -57,8 +57,8 @@ CREATE TABLE user_errors (
   difficulty VARCHAR2(10),
   error_time TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
-
-
+ALTER TABLE user_errors ADD CONSTRAINT fk_user_errors_user FOREIGN KEY (user_id) REFERENCES users(user_id) ON DELETE CASCADE;
+ALTER TABLE user_errors ADD CONSTRAINT fk_user_errors_exercise FOREIGN KEY (exercise_id) REFERENCES exercises(id) ON DELETE CASCADE;
 
 
 INSERT INTO CHAPTERS(TITLE,DESCRIPTION) VALUES('Capitolul 1','I am starting to learn English.');
@@ -1226,27 +1226,4 @@ INSERT INTO exercises (TYPE, LESSON_ID, QUESTION, OPTIONS, ANSWER, DIFFICULTY, T
 INSERT INTO exercises (TYPE, LESSON_ID, QUESTION, OPTIONS, ANSWER, DIFFICULTY, TOPIC)VALUES (2, 1006, 'Formează propoziția: "Admir oamenii care ajută alți oameni."', 'I,admire,people,who,help,others', 'I admire people who help others', 'greu', 'role models');
 INSERT INTO exercises (TYPE, LESSON_ID, QUESTION, OPTIONS, ANSWER, DIFFICULTY, TOPIC)VALUES (1, 1006, 'Alege întrebarea corectă: "Ce ai învățat din această experiență?"', 'What did you learn from this experience?', 'What did you learn from this experience?', 'greu', 'reflection');
 INSERT INTO exercises (TYPE, LESSON_ID, QUESTION, OPTIONS, ANSWER, DIFFICULTY, TOPIC)VALUES (3, 1006, 'Potrivește expresii avansate:', 'follow a dream:urmează un vis,build confidence:construiește încrederea,overcome a challenge:depășește o provocare', '', 'greu', 'advanced');
-
-
-
-/*
-select * from users;
-select * from chapters;
-select * from lessons;
-select * from exercises;
-select * from chapters;
-select * from lessons;
-select * from exercises order by id;
-*/
-
-select * from users;
-
-COMMIT;
-
-
-
-
-
-
-
 
