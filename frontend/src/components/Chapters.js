@@ -2,7 +2,7 @@ import React, { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import axios from "axios";
 import "./Chapters.css"; // Import stilul separat
-import {jwtDecode} from "jwt-decode";
+import { jwtDecode } from "jwt-decode";
 
 
 //import { DotLottieReact } from '@lottiefiles/dotlottie-react';
@@ -18,7 +18,7 @@ const chapterImages = {
 
 
 const Chapters = () => {
-  
+
   const navigate = useNavigate();
   const [chapters, setChapters] = useState([]);
   const token = localStorage.getItem("token");
@@ -58,8 +58,8 @@ const Chapters = () => {
   }, [navigate]);
 
   return (
-<><div className="top-bar">
-  <div className="user-profile">
+    <><div className="top-bar">
+  <div className="user-profile" onClick={() => navigate("/profil")} style={{ cursor: "pointer" }}>
     <img
       src="/images/default-avatar.jpg"
       alt="Profil"
@@ -72,85 +72,88 @@ const Chapters = () => {
   </div>
 </div>
 
-    
-    <div className="chapters-container">
-      <aside className="sidebar">
-        <h2 className="sidebar-title">E-Learning</h2>
-        <ul className="sidebar-menu">
-          <li>📚 ÎNVAȚĂ</li>
-          <li>🎯 EXERSARE</li>
-          <li>🏆 CLASAMENTE</li>
-          <li>🛍 MAGAZIN</li>
-          <li>⚙️ PROFIL</li>
-        </ul>
-      </aside>
-
-      <main className="chapters-content">
-      <div className="back-bar" onClick={() => navigate(-1)}>
-  <span className="back-arrow">←</span>
-  <span className="back-text">Înapoi</span>
-</div>
 
 
-        <div className="chapters-list">
-          {chapters.length > 0 ? (
-            chapters.map((chapter) => (
-              <div
-                key={chapter.id}
-                className={`chapter-item ${chapter.completed ? "completed tall" : ""}`}
-              >
-                <div className="chapter-left">
-                  <h2>{chapter.title}</h2>
 
-                  <div className="progress-bar-container">
-                    <div className="progress-bar">
-                      <div
-                        className="progress-fill"
-                        style={{
-                          width: `${(chapter.completedLessons / chapter.totalLessons) * 100}%`,
-                        }}
-                      ></div>
+      <div className="chapters-container">
+        <aside className="sidebar">
+          <h2 className="sidebar-title">E-Learning</h2>
+          <ul className="sidebar-menu">
+            <li onClick={() => navigate("/chapters")}>📖 Capitole</li>
+
+            <li>🎯 EXERSARE</li>
+            <li>🏆 CLASAMENTE</li>
+            <li>🛍 MAGAZIN</li>
+            <li>⚙️ PROFIL</li>
+          </ul>
+        </aside>
+
+        <main className="chapters-content">
+          <div className="back-bar" onClick={() => navigate(-1)}>
+            <span className="back-arrow">←</span>
+            <span className="back-text">Înapoi</span>
+          </div>
+
+
+          <div className="chapters-list">
+            {chapters.length > 0 ? (
+              chapters.map((chapter) => (
+                <div
+                  key={chapter.id}
+                  className={`chapter-item ${chapter.completed ? "completed tall" : ""}`}
+                >
+                  <div className="chapter-left">
+                    <h2>{chapter.title}</h2>
+
+                    <div className="progress-bar-container">
+                      <div className="progress-bar">
+                        <div
+                          className="progress-fill"
+                          style={{
+                            width: `${(chapter.completedLessons / chapter.totalLessons) * 100}%`,
+                          }}
+                        ></div>
+                      </div>
+                      <span className="progress-text">
+                        {chapter.completedLessons} / {chapter.totalLessons} lecții
+                      </span>
                     </div>
-                    <span className="progress-text">
-                      {chapter.completedLessons} / {chapter.totalLessons} lecții
-                    </span>
-                  </div>
 
-                  {/* <div className={`status ${chapter.completed ? "completed" : "pending"}`}>
+                    {/* <div className={`status ${chapter.completed ? "completed" : "pending"}`}>
                     {chapter.completed ? "✔ FINALIZAT!" : "⏳ În curs..."}
                   </div> */}
 
-                  <button
-                    className={`start-button ${chapter.completed ? "replay" : ""}`}
-                    onClick={() => navigate(`/lectii/${chapter.id}`)}
-                  >
-                    {chapter.completed ? "Repetă capitolul" : "Continuă"}
-                  </button>
-                </div>
-
-                <div className="chapter-right">
-                  <div className="speech-bubble">
-                    <p>{chapter.description}</p>
+                    <button
+                      className={`start-button ${chapter.completed ? "replay" : ""}`}
+                      onClick={() => navigate(`/lectii/${chapter.id}`)}
+                    >
+                      {chapter.completed ? "Repetă capitolul" : "Continuă"}
+                    </button>
                   </div>
-                  {chapterImages[chapter.id] && (
-                    <img
-                      src={chapterImages[chapter.id]}
-                      alt="animal mascot"
-                      className="chapter-image"
-                    />
-                  )}
+
+                  <div className="chapter-right">
+                    <div className="speech-bubble">
+                      <p>{chapter.description}</p>
+                    </div>
+                    {chapterImages[chapter.id] && (
+                      <img
+                        src={chapterImages[chapter.id]}
+                        alt="animal mascot"
+                        className="chapter-image"
+                      />
+                    )}
+                  </div>
                 </div>
-              </div>
 
-            ))
+              ))
 
 
-          ) : (
-            <p>Se încarcă capitolele...</p>
-          )}
-        </div>
-      </main>
-    </div>
+            ) : (
+              <p>Se încarcă capitolele...</p>
+            )}
+          </div>
+        </main>
+      </div>
     </>
   );
 };

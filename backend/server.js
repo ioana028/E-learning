@@ -1,4 +1,6 @@
 const express = require('express');
+const fs = require("fs");
+const path = require("path");
 const cors = require('cors');
 const bodyParser = require('body-parser');
 const oracledb = require('oracledb');
@@ -6,6 +8,8 @@ const bcrypt = require("bcrypt");
 const jwt = require("jsonwebtoken");
 const SECRET_KEY = "your_secret_key";
 const { exec } = require("child_process");  //pt ml
+const multer = require("multer");
+
 
 
 const app = express();
@@ -381,6 +385,81 @@ app.get('/lectii/:chapterId', async (req, res) => {
   }
 });
 
+app.get("/teorie/:lessonId", async (req, res) => {
+  const { lessonId } = req.params;
+  const authHeader = req.headers.authorization;
+
+  if (!authHeader) return res.status(401).json({ error: "Token lipsă" });
+
+  const token = authHeader.split(" ")[1];
+  let decoded;
+  try {
+    decoded = jwt.verify(token, SECRET_KEY);
+  } catch {
+    return res.status(403).json({ error: "Token invalid" });
+  }
+
+  const userId = decoded.userId;
+
+  let connection;
+  try {
+    connection = await oracledb.getConnection(dbConfig);
+    const result = await connection.execute(
+      `SELECT english_level FROM users WHERE user_id = :userId`,
+      { userId },
+      { outFormat: oracledb.OUT_FORMAT_OBJECT }
+    );
+
+    if (result.rows.length === 0) {
+      return res.status(404).json({ error: "Utilizatorul nu a fost găsit." });
+    }
+
+    const userLevel = result.rows[0].ENGLISH_LEVEL;
+    let nivelText;
+
+    switch (userLevel) {
+      case "A1":
+      case "A2":
+        nivelText = "usor";
+        break;
+      case "B1":
+      case "B2":
+        nivelText = "mediu";
+        break;
+      case "C1":
+      case "C2":
+        nivelText = "avansat";
+        break;
+      default:
+        nivelText = "avansat";
+    }
+
+    const filePath = path.join(__dirname, "teorie", lessonId, `${nivelText}.txt`);
+
+    fs.readFile(filePath, "utf-8", (err, data) => {
+      if (err) {
+        console.error(`❌ Eroare la citirea fișierului:`, err);
+        return res.status(404).json({ error: "Teoria nu a fost găsită pentru nivelul tău." });
+      }
+      res.json({ teorie: data });
+    });
+
+  } catch (err) {
+    console.error("❌ Eroare la preluarea nivelului:", err);
+    res.status(500).json({ error: "Eroare server" });
+  } finally {
+    if (connection) {
+      try {
+        await connection.close();
+      } catch (err) {
+        console.error("❌ Eroare la închiderea conexiunii:", err);
+      }
+    }
+  }
+});
+
+
+
 app.get('/exercitii/:lessonId', async (req, res) => {
   let connection;
   const { lessonId } = req.params; // preia lessonId din URL
@@ -658,6 +737,26 @@ app.listen(5000, () => console.log('Backend running on http://localhost:5000'));
 
 
 
+// Middleware pt. static files
+app.use("/avatars", express.static(path.join(__dirname, "avatars")));
+
+// Storage setup
+const storage = multer.diskStorage({
+  destination: (req, file, cb) => {
+    cb(null, "avatars/");
+  },
+  filename: (req, file, cb) => {
+    const username = req.body.username;
+    const ext = path.extname(file.originalname);
+    cb(null, `${username}${ext}`);
+  },
+});
+
+const upload = multer({ storage });
+
+app.post("/upload-avatar", upload.single("image"), (req, res) => {
+  res.json({ success: true, filename: req.file.filename });
+});
 
 
 

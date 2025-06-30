@@ -3,10 +3,23 @@ import { useParams, useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
 import axios from "axios";
 import "./Lectii.css"; // Importă stilurile externe
+import { jwtDecode } from "jwt-decode";
 
 const Lectii = () => {
-  const { chapterId } = useParams(); // Get chapterId from URL
+
   const navigate = useNavigate();
+  const [chapters, setChapters] = useState([]);
+  const token = localStorage.getItem("token");
+  let username = "Utilizator";
+
+
+  if (token) {
+    const decoded = jwtDecode(token);
+    username = decoded.username;
+  }
+
+
+  const { chapterId } = useParams(); // Get chapterId from URL
   const [lessons, setLessons] = useState([]);
   const [selectedLesson, setSelectedLesson] = useState(null);
 
@@ -54,12 +67,17 @@ const Lectii = () => {
     fetchLessons();
   }, [chapterId, navigate]);
 
+
+
   return (
+
     <div className="dashboard-container">
+
       <aside className="sidebar">
         <h2 className="sidebar-title">E-Learning</h2>
         <ul className="sidebar-menu">
-          <li>📚 Lecții</li>
+          <li onClick={() => navigate("/chapters")}>📖 Capitole</li>
+
           <li>🎯 Exersare</li>
           <li>🏆 Clasament</li>
           <li>🛍 Magazin</li>
@@ -67,8 +85,30 @@ const Lectii = () => {
         </ul>
       </aside>
 
+
+      <div className="user-profile">
+        <img
+          src="/images/default-avatar.jpg"
+          alt="Profil"
+          className="profile-picture"
+        />
+        <div className="user-info">
+          <p className="username">{username}</p>
+          <p className="xp">XP: 0</p>
+        </div>
+      </div>
+
       <main className="dashboard-content">
+        <div className="back-bar" onClick={() => navigate(-1)}>
+            <span className="back-arrow">←</span>
+            <span className="back-text">Înapoi</span>
+          </div>
+        <div>
+          
+
+        
         <div className="progress-container">
+
           <h1 className="progress-title">Progresul Tău</h1>
           <div className="lesson-list">
             {lessons.length > 0 ? (
@@ -99,10 +139,11 @@ const Lectii = () => {
                       <p>{`Lecția ${lesson.id} din ${lessons.length}`}</p>
                       <button
                         className="start-button"
-                        onClick={() => navigate(`/exercitii/${lesson.id}`)}
+                        onClick={() => navigate(`/teorie/${lesson.id}`)}
                       >
                         ÎNCEPE +10XP
                       </button>
+
 
                     </motion.div>
                   )}
@@ -112,7 +153,7 @@ const Lectii = () => {
               <p>Se încarcă lecțiile...</p>
             )}
           </div>
-        </div>
+        </div></div>
       </main>
     </div>
   );

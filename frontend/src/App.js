@@ -7,6 +7,8 @@ import Welcome from './components/Welcome';
 import Register from './components/Register';
 import Exercitii from './components/Exercitii';
 import SetLevel from './components/SetLevel';
+import Teorie from './components/Teorie';
+import Profil from './components/Profil';
 
 
 const App = () => (
@@ -17,8 +19,10 @@ const App = () => (
       <Route path="/register" element={<Register />} />
       <Route path="/chapters" element={<Chapters />} />
       <Route path="/lectii/:chapterId" element={<Lectii />} />
+      <Route path="/teorie/:lessonId" element={<Teorie />} />
       <Route path="/exercitii/:lessonId" element={<Exercitii />} />
       <Route path="/set-level" element={<SetLevel />} />
+      <Route path="/profil" element={<Profil />} />
 
     </Routes>
   </Router>

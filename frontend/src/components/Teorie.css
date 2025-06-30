@@ -1,0 +1,166 @@
+.dashboard-container {
+  display: flex;
+  height: 100vh;
+  overflow: hidden;
+}
+.sidebar {
+  width: 250px;
+  min-width: 250px;
+  background: #fdf6e3;
+  padding: 20px;
+  box-shadow: 3px 0 10px rgba(0, 0, 0, 0.1);
+  border-right: 2px solid #c4a484;
+  flex-shrink: 0; /* 🔒 Nu permite să se micșoreze */
+}
+
+.book-container {
+  text-align: center;
+  padding: 2rem;
+  padding-top: 100px;
+}
+
+.teorie-title {
+  margin-bottom: 2rem;
+  font-size: 1.5rem;
+}
+
+.book-pages {
+  display: flex;
+  justify-content: center;
+  gap: 2rem;
+  margin-bottom: 1.5rem;
+}
+
+.book-page {
+  width: 400px; /* mărit de la 300 */
+  height: 500px; /* mărit de la 300 */
+  font-size: 1.1rem; /* mai mare pentru text */
+  padding: 1.5rem; /* mai mult spațiu interior */
+  border: 2px solid #ccc;
+  border-radius: 10px;
+  background: #fdfdfd;
+  text-align: left;
+  white-space: pre-wrap;
+  overflow-y: auto;
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1); /* opțional: un mic shadow */
+}
+
+
+.left {
+  background-color: #fff8f0;
+}
+
+.right {
+  background-color: #fff8f0;
+}
+
+.book-controls {
+  display: flex;
+  justify-content: center;
+  gap: 1rem;
+}
+
+.book-controls button {
+  padding: 0.5rem 1rem;
+  font-size: 1rem;
+  border-radius: 8px;
+  border: none;
+  cursor: pointer;
+}
+
+.start-button {
+  background-color: #007bff;
+  color: white;
+}
+
+/*sageti*/
+.nav-arrow {
+  position: absolute;
+  bottom: 20px;
+  background: #fce9d3;
+  color: #4a3f35;
+  font-size: 24px;
+  border: 2px solid #c4a484;
+  border-radius: 50%;
+  width: 48px;
+  height: 48px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  cursor: pointer;
+  transition: background 0.2s;
+  z-index: 10;
+}
+
+.nav-arrow:hover {
+  background: #e0c9a6;
+}
+
+.left-arrow {
+  left: 20px;
+}
+
+.right-arrow,
+.finish-arrow {
+  right: 20px;
+}
+
+.finish-arrow {
+  background: #b8e0b8;
+  color: #1e3d1e;
+  font-size: 14px;
+  font-weight: bold;
+  border-radius: 20px;
+  padding: 10px 16px;
+  width: auto;
+  height: auto;
+  white-space: nowrap;
+  align-self: center;
+  border: 2px solid #3a763a;
+  transition: background 0.2s;
+}
+
+.finish-arrow:hover {
+  background: #a3d6a3;
+}
+
+.book-page {
+  position: relative; /* necesar pentru poziționarea absolută a săgeților */
+  padding: 20px;
+  background: #fff9ec;
+  border: 2px solid #c4a484;
+  width: 45%;
+  min-height: 300px;
+  overflow-y: auto;
+}
+
+
+.top-bar {
+  position: absolute;
+  top: 0;
+  left: 350px; /* egal cu lățimea sidebar-ului */
+  right: 0;
+  height: 60px;
+  display: flex;
+  align-items: center;
+  padding-left: 20px;
+  padding-left: 230px;
+  padding-top: 40px;
+  z-index: 5;
+  
+}
+
+.back-bar {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 16px;
+  font-weight: bold;
+  color: #4a3f35;
+  cursor: pointer;
+  
+}
+
+.back-arrow {
+  font-size: 18px;
+}

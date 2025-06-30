@@ -87,4 +87,21 @@
     font-size: 14px;
     margin-bottom: 10px;
   }
+  html {
+  overflow-y: scroll;
+}
+
+  .user-profile{
+    position: fixed;        /* stays in place, even on scroll */
+  top: 20px;
+  right: 20px;
+  background-color: #fff9ec;
+  border: 2px solid #c4a484;
+  padding: 12px 20px;
+  border-radius: 10px;
+  box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+  z-index: 1000;          /* make sure it's above everything */
+  
+  }
+
   

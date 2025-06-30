@@ -1,10 +1,24 @@
 import React, { useEffect, useState, useMemo } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import axios from "axios";
+import "./Exercitii.css";
+import { jwtDecode } from "jwt-decode";
+
 
 const Exercitii = () => {
-  const { lessonId } = useParams();
+
   const navigate = useNavigate();
+    const [chapters, setChapters] = useState([]);
+    const token = localStorage.getItem("token");
+    let username = "Utilizator";
+  
+    if (token) {
+      const decoded = jwtDecode(token);
+      username = decoded.username;
+    }
+
+  const { lessonId } = useParams();
+  
 
   const [exercises, setExercises] = useState([]);
   const [currentIndex, setCurrentIndex] = useState(0);
@@ -30,6 +44,12 @@ const Exercitii = () => {
   const rightRefs = useMemo(() => ({}), []);
 
 
+  const [progressIndex, setProgressIndex] = useState(0);
+  const advanceProgress = () => {
+  setProgressIndex((prev) => Math.min(prev + 1, exercises.length));
+};
+
+
 
   const shuffleArray = (array) => {
     const shuffled = [...array];
@@ -48,7 +68,7 @@ const Exercitii = () => {
             Authorization: `Bearer ${localStorage.getItem("token")}`
           }
         });
-        
+
         if (response.data.success) {
           setExercises(response.data.exercises.rows);
         }
@@ -59,7 +79,7 @@ const Exercitii = () => {
 
     fetchExercises();
   }, [lessonId]);
-  
+
 
   useEffect(() => {
     const fetchChapterId = async () => {
@@ -72,10 +92,10 @@ const Exercitii = () => {
         console.error("Eroare la obținerea chapterId:", err);
       }
     };
-  
+
     fetchChapterId();
   }, [lessonId]);
-  
+
 
   useEffect(() => {
     const currentExercise = exercises[currentIndex];
@@ -150,19 +170,20 @@ const Exercitii = () => {
         setCorrectAnswers(correctAnswers + 1);
       } else {
         setIsCorrect(false);
-  
+
         // 👇 Logăm greșeala în DB
         const currentExercise = exercises[currentIndex];
         const exerciseId = currentExercise[7];       // LESSON_ID
         const topic = currentExercise[6];            // Topic din coloana 6
         const difficulty = currentExercise[5];       // Dificultate din coloana 5
         logExerciseError(exerciseId, topic, difficulty);
-        console.log("+0",currentExercise[0],"+1",currentExercise[1],"+2",currentExercise[2],"+3",currentExercise[3],"+4",currentExercise[4]);
-        console.log("+5",currentExercise[5],"+6",currentExercise[6],"+7",currentExercise[7],"+8",currentExercise[8],"+9",currentExercise[9]);
+        console.log("+0", currentExercise[0], "+1", currentExercise[1], "+2", currentExercise[2], "+3", currentExercise[3], "+4", currentExercise[4]);
+        console.log("+5", currentExercise[5], "+6", currentExercise[6], "+7", currentExercise[7], "+8", currentExercise[8], "+9", currentExercise[9]);
       }
     }
+    advanceProgress();
   };
-  
+
 
   const handleFinish = async () => {
     setShowResult(true);
@@ -171,8 +192,8 @@ const Exercitii = () => {
     if (!passed) return;
 
     try {
-      
-      
+
+
       await axios.post("http://localhost:5000/api/update-progress", {
         chapterId,
         lessonId: parseInt(lessonId)
@@ -201,8 +222,8 @@ const Exercitii = () => {
     return shuffleArray(options.split(","));
   }, [exercises, currentIndex]);
 
-  
-  
+
+
 
   const renderExercise = (exercise) => {
     const [type, , question, options, answer] = exercise;
@@ -211,7 +232,7 @@ const Exercitii = () => {
     switch (type) {
       case 1:
         return (
-          <div>
+          <div className="container-exercitiu">
             <h3>{question}</h3>
             <ul>
               {options.split(",").map((opt, idx) => (
@@ -266,7 +287,7 @@ const Exercitii = () => {
           setIsChecked(true);
           const isCorrectAnswer = userAnswer.trim().toLowerCase() === answer.trim().toLowerCase();
           setIsCorrect(isCorrectAnswer);
-        
+
           if (isCorrectAnswer) {
             setCorrectAnswers(correctAnswers + 1);
           } else {
@@ -277,10 +298,11 @@ const Exercitii = () => {
             const difficulty = currentExercise[5];       // Difficulty
             logExerciseError(exerciseId, topic, difficulty);
           }
-        
+
           setFeedbackShown(true);
+          advanceProgress();
         };
-        
+
 
         const handleResetSentence = () => {
           setUserSentence([]);
@@ -302,7 +324,7 @@ const Exercitii = () => {
 
 
         return (
-          <div>
+          <div className="container-exercitiu">
             <h3>Tradu propoziția:</h3>
             <button
               onClick={() => speakText(question)}
@@ -440,11 +462,11 @@ const Exercitii = () => {
             const found = pairs.find(p => p.left === pair.left && p.right === pair.right);
             return { ...pair, correct: !!found };
           });
-        
+
           setMatchResults(results);
-        
+
           const correctCount = results.filter(r => r.correct).length;
-        
+
           if (correctCount === pairs.length) {
             setCorrectAnswers(correctAnswers + 1);
           } else {
@@ -455,10 +477,11 @@ const Exercitii = () => {
             const difficulty = currentExercise[5];
             logExerciseError(exerciseId, topic, difficulty);
           }
-        
-          setIsChecked(true);
+
+          setIsChecked(true)
+          advanceProgress();;
         };
-        
+
 
         const getResultFor = (left, right) => {
           const result = matchResults.find(r => r.left === left && r.right === right);
@@ -506,7 +529,7 @@ const Exercitii = () => {
         };
 
         return (
-          <div style={{ position: "relative" }}>
+          <div className="container-exercitiu" style={{ position: "relative" }}>
             <h3>{question}</h3>
 
             <div style={{ display: "flex", gap: "40px", position: "relative" }}>
@@ -606,46 +629,79 @@ const Exercitii = () => {
         return <p>Tip necunoscut de exercițiu.</p>;
     }
   };
-  
+
 
   if (exercises.length === 0) return <p>Se încarcă exercițiile...</p>;
 
   return (
-    <div className="exercise-page">
-      {!showResult && (
-        <>
-          <h2>Exercițiu {currentIndex + 1} din {exercises.length}</h2>
-          {renderExercise(exercises[currentIndex])}
-        </>
-      )}
-
-      {showResult && (
-        <div
-          style={{
-            textAlign: "center",
-            padding: "20px",
-            marginTop: "20px",
-            borderRadius: "8px",
-            backgroundColor: correctAnswers > exercises.length / 2 ? "#d4edda" : "#f8d7da",
-            color: correctAnswers > exercises.length / 2 ? "#155724" : "#721c24",
-          }}
-        >
-          {correctAnswers > exercises.length / 2 ? (
-            <>
-              <h3>Felicitări! Ai trecut examenul! 🎉</h3>
-              <p>Ai răspuns corect la {correctAnswers} din {exercises.length} exerciții.</p>
-            </>
-          ) : (
-            <>
-              <h3>Nu ai trecut examenul. Mai încearcă! 😞</h3>
-              <p>Ai răspuns corect la {correctAnswers} din {exercises.length} exerciții.</p>
-            </>
-          )}
-          <button onClick={handleRedirect} style={{ marginTop: "20px", padding: "10px 20px", backgroundColor: "#28a745", color: "white", borderRadius: "5px" }}>
-            Mergi la lecții
-          </button>
+    <div className="dashboard-container">
+      <div className="user-profile">
+        <img
+          src="/images/default-avatar.jpg"
+          alt="Profil"
+          className="profile-picture"
+        />
+        <div className="user-info">
+          <p className="username">{username}</p>
+          <p className="xp">XP: 0</p>
         </div>
-      )}
+      </div>
+      <aside className="sidebar">
+        <h2 className="sidebar-title">E-Learning</h2>
+        <ul className="sidebar-menu">
+           <li onClick={() => navigate("/chapters")}>📖 Capitole</li>
+
+          <li>🎯 Exersare</li>
+          <li>🏆 Clasament</li>
+          <li>🛍 Magazin</li>
+          <li>⚙️ Setări</li>
+        </ul>
+      </aside>
+      <div className="back-bar-exercises" onClick={() => navigate(-1)}>
+            <span className="back-arrow">←</span>
+            <span className="back-text">Înapoi</span>
+          </div>
+      
+      <div className="bar_and_exercise">
+      <div className="exercise-progress-bar">
+              <div
+                className="progress-fill"
+                style={{
+                  width: `${(progressIndex / exercises.length) * 100}%`
+
+                }}
+              ></div>
+            </div>
+      <div className="exercise-page">
+        {!showResult && (
+          <>
+            
+
+            <div className="exercise-card">
+              {renderExercise(exercises[currentIndex])}
+            </div>
+
+          </>
+        )}
+
+       {showResult && (
+  <div className="result-container">
+    <div className={`result-card ${correctAnswers > exercises.length / 2 ? 'success' : 'fail'}`}>
+      <h3>
+        {correctAnswers > exercises.length / 2
+          ? "🎉 Felicitări! Ai trecut examenul!"
+          : "😞 Nu ai trecut examenul. Mai încearcă!"}
+      </h3>
+      <p>Ai răspuns corect la {correctAnswers} din {exercises.length} exerciții.</p>
+      <button className="return-button" onClick={handleRedirect}>
+        Mergi la lecții
+      </button>
+    </div>
+  </div>
+)}
+
+      </div>
+      </div>
     </div>
   );
 };
