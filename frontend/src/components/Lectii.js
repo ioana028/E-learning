@@ -10,7 +10,11 @@ const Lectii = () => {
   const navigate = useNavigate();
   const [chapters, setChapters] = useState([]);
   const token = localStorage.getItem("token");
+  const [xp, setXp] = useState(0);
+  const [coins, setCoins] = useState(0);
+
   let username = "Utilizator";
+   const [avatarUrl, setAvatarUrl] = useState("/images/default-avatar.jpg");
 
 
   if (token) {
@@ -67,36 +71,80 @@ const Lectii = () => {
     fetchLessons();
   }, [chapterId, navigate]);
 
+useEffect(() => {
+  const token = localStorage.getItem("token");
+  if (token) {
+    const decoded = jwtDecode(token);
+    const user = decoded.username;
+
+    // Avatar
+    const url = `http://localhost:5000/avatars/${user}.jpg`;
+    fetch(url)
+      .then((res) => res.ok && setAvatarUrl(url))
+      .catch(() => {});
+
+    // XP și Coins
+    axios.get(`http://localhost:5000/api/user-stats/${user}`)
+  .then((res) => {
+    console.log("📦 Date user-stats:", res.data); // ← Asta vezi în browser
+    if (res.data.success) {
+      setXp(res.data.XP || res.data.xp || 0);
+      setCoins(res.data.COINS || res.data.coins || 0);
+    }
+  })
+  .catch(err => console.log("Eroare la fetch XP/coins:", err));
+
+  }
+}, []);
 
 
   return (
 
     <div className="dashboard-container">
 
+<div className="xp-coins-box-exercitii">
+    <p><strong>XP:</strong> {xp}</p>
+    <p style={{ display: "flex", alignItems: "center", gap: "6px", margin: 0 }}>
+  <img
+    src="/images/coin.png"
+    alt="coin"
+    style={{ width: "18px", height: "18px" }}
+  />: 
+  { " "+coins}
+</p>
+
+
+  </div>
       <aside className="sidebar">
         <h2 className="sidebar-title">E-Learning</h2>
         <ul className="sidebar-menu">
           <li onClick={() => navigate("/chapters")}>📖 Capitole</li>
-
-          <li>🎯 Exersare</li>
+<li onClick={() => navigate("/notebook")}>📓 Notițe</li>
+         <li onClick={() => navigate("/dictionary")}>📘 Dicționar</li>
+  <li onClick={() => navigate("/ai")} style={{ display: "flex", alignItems: "center", gap: "8px", cursor: "pointer" }}>
+              <img src="/images/bot.png" alt="AI" style={{ width: "33px", height: "30px", marginLeft: "-7px" }} />
+              AI
+            </li>
           <li>🏆 Clasament</li>
           <li>🛍 Magazin</li>
-          <li>⚙️ Setări</li>
+          <li onClick={() => navigate("/profil")}>⚙️ PROFIL</li>
+
         </ul>
       </aside>
 
 
-      <div className="user-profile">
-        <img
-          src="/images/default-avatar.jpg"
-          alt="Profil"
-          className="profile-picture"
-        />
-        <div className="user-info">
-          <p className="username">{username}</p>
-          <p className="xp">XP: 0</p>
-        </div>
-      </div>
+      <div className="user-profile" onClick={() => navigate("/profil")} style={{ cursor: "pointer" }}>
+    <img
+  src={avatarUrl}
+  alt="Profil"
+  className="profile-picture"
+/>
+
+    <div className="user-info">
+      <p className="username">{username}</p>
+      
+    </div>
+  </div>
 
       <main className="dashboard-content">
         <div className="back-bar" onClick={() => navigate(-1)}>

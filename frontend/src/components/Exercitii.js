@@ -3,6 +3,11 @@ import { useParams, useNavigate } from "react-router-dom";
 import axios from "axios";
 import "./Exercitii.css";
 import { jwtDecode } from "jwt-decode";
+import FloatingMenuComponent from "./FloatingMenuComponent";
+import NotebookOverlay from "./NotebookOverlay";
+import DictionaryOverlay from "./DictionaryOverlay";
+import ChatBotOverlay from "./ChatBotOverlay";
+
 
 
 const Exercitii = () => {
@@ -10,6 +15,7 @@ const Exercitii = () => {
   const navigate = useNavigate();
     const [chapters, setChapters] = useState([]);
     const token = localStorage.getItem("token");
+    const [avatarUrl, setAvatarUrl] = useState("/images/default-avatar.jpg");
     let username = "Utilizator";
   
     if (token) {
@@ -38,6 +44,18 @@ const Exercitii = () => {
   const [matchResults, setMatchResults] = useState([]);
   const [rightWords, setRightWords] = useState([]);
   const [chapterId, setChapterId] = useState(null);
+
+  const [xpGained, setXpGained] = useState(0);
+const [coinsGained, setCoinsGained] = useState(0);
+
+const [xp, setXp] = useState(0);
+const [coins, setCoins] = useState(0);
+
+const [showNotebook, setShowNotebook] = useState(false);
+const [showDictionary, setShowDictionary] = useState(false);
+const [showChatBot, setShowChatBot] = useState(false);
+
+
 
 
   const leftRefs = useMemo(() => ({}), []);
@@ -188,6 +206,8 @@ const Exercitii = () => {
   const handleFinish = async () => {
     setShowResult(true);
 
+      const xpEarned = 10;
+  const coinsEarned = 5;
     const passed = correctAnswers > exercises.length / 2;
     if (!passed) return;
 
@@ -204,8 +224,20 @@ const Exercitii = () => {
           }
         }
       );
+      await axios.post("http://localhost:5000/api/update-rewards", {
+    username,
+    xp: xpEarned,
+    coins: coinsEarned
+  }, {
+    headers: {
+      Authorization: `Bearer ${localStorage.getItem("token")}`
+    }
+  });
+
+  setXpGained(xpEarned);
+  setCoinsGained(coinsEarned);
     } catch (error) {
-      console.error("Eroare la salvarea progresului:", error);
+      console.error("Eroare la salvarea progresului sau recompenselor:", error);
     }
   };
 
@@ -222,7 +254,31 @@ const Exercitii = () => {
     return shuffleArray(options.split(","));
   }, [exercises, currentIndex]);
 
+useEffect(() => {
+  const token = localStorage.getItem("token");
+  if (token) {
+    const decoded = jwtDecode(token);
+    const user = decoded.username;
 
+    // Avatar
+    const url = `http://localhost:5000/avatars/${user}.jpg`;
+    fetch(url)
+      .then((res) => res.ok && setAvatarUrl(url))
+      .catch(() => {});
+
+    // XP și Coins
+    axios.get(`http://localhost:5000/api/user-stats/${user}`)
+  .then((res) => {
+    console.log("📦 Date user-stats:", res.data); // ← Asta vezi în browser
+    if (res.data.success) {
+      setXp(res.data.XP || res.data.xp || 0);
+      setCoins(res.data.COINS || res.data.coins || 0);
+    }
+  })
+  .catch(err => console.log("Eroare la fetch XP/coins:", err));
+
+  }
+}, []);
 
 
   const renderExercise = (exercise) => {
@@ -635,26 +691,46 @@ const Exercitii = () => {
 
   return (
     <div className="dashboard-container">
-      <div className="user-profile">
-        <img
-          src="/images/default-avatar.jpg"
-          alt="Profil"
-          className="profile-picture"
-        />
-        <div className="user-info">
-          <p className="username">{username}</p>
-          <p className="xp">XP: 0</p>
-        </div>
-      </div>
+      
+      <div className="user-profile" onClick={() => navigate("/profil")} style={{ cursor: "pointer" }}>
+    <img
+  src={avatarUrl}
+  alt="Profil"
+  className="profile-picture"
+/>
+
+    <div className="user-info">
+      <p className="username">{username}</p>
+     
+    </div>
+  </div>
+       <div className="xp-coins-box-exercitii">
+    <p><strong>XP:</strong> {xp}</p>
+    <p style={{ display: "flex", alignItems: "center", gap: "6px", margin: 0 }}>
+  <img
+    src="/images/coin.png"
+    alt="coin"
+    style={{ width: "18px", height: "18px" }}
+  />: 
+  { " "+coins}
+</p>
+
+
+  </div>
       <aside className="sidebar">
         <h2 className="sidebar-title">E-Learning</h2>
         <ul className="sidebar-menu">
            <li onClick={() => navigate("/chapters")}>📖 Capitole</li>
-
-          <li>🎯 Exersare</li>
+<li onClick={() => navigate("/notebook")}>📓 Notițe</li>
+          <li onClick={() => navigate("/dictionary")}>📘 Dicționar</li>
+  <li onClick={() => navigate("/ai")} style={{ display: "flex", alignItems: "center", gap: "8px", cursor: "pointer" }}>
+              <img src="/images/bot.png" alt="AI" style={{ width: "33px", height: "30px", marginLeft: "-7px" }} />
+              AI
+            </li>
           <li>🏆 Clasament</li>
           <li>🛍 Magazin</li>
-          <li>⚙️ Setări</li>
+          <li onClick={() => navigate("/profil")}>⚙️ PROFIL</li>
+
         </ul>
       </aside>
       <div className="back-bar-exercises" onClick={() => navigate(-1)}>
@@ -693,6 +769,13 @@ const Exercitii = () => {
           : "😞 Nu ai trecut examenul. Mai încearcă!"}
       </h3>
       <p>Ai răspuns corect la {correctAnswers} din {exercises.length} exerciții.</p>
+
+      {correctAnswers > exercises.length / 2 && (
+        <p style={{ fontWeight: "bold", marginTop: "10px" }}>
+          +{xpGained} XP | +{coinsGained} Monede
+        </p>
+      )}
+
       <button className="return-button" onClick={handleRedirect}>
         Mergi la lecții
       </button>
@@ -700,8 +783,18 @@ const Exercitii = () => {
   </div>
 )}
 
+
       </div>
       </div>
+      <FloatingMenuComponent
+  onOpenNotebook={() => setShowNotebook(true)}
+  onOpenDictionary={() => setShowDictionary(true)}
+  onOpenChatBot={() => setShowChatBot(true)}
+/>
+{showNotebook && <NotebookOverlay onClose={() => setShowNotebook(false)} />}
+{showDictionary && <DictionaryOverlay onClose={() => setShowDictionary(false)} />}
+{showChatBot && <ChatBotOverlay onClose={() => setShowChatBot(false)} />}
+
     </div>
   );
 };

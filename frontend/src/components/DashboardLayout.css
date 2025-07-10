@@ -1,0 +1,97 @@
+.dashboard-container-dashboard {
+  display: flex;
+  min-height: 100vh;
+}
+
+.sidebar-dashboard {
+  position: fixed;
+  top: 0;
+  left: 0;
+  height: 100%;
+  width: 240px;
+  background: #fff9ec;
+  padding: 20px;
+  box-shadow: 2px 0 6px rgba(0,0,0,0.1);
+}
+
+.sidebar-title-dashboard {
+  margin-bottom: 20px;
+  font-size: 22px;
+}
+
+.sidebar-menu-dashboard {
+  list-style: none;
+  padding: 0;
+}
+
+.sidebar-menu-dashboard li {
+  margin-bottom: 12px;
+  cursor: pointer;
+}
+
+.top-bar-dashboard {
+  position: fixed;
+  top: 0;
+  right: 0;
+  display: flex;
+  align-items: center;
+  padding: 10px;
+  background: transparent;
+  gap: 16px;
+}
+
+.xp-coins-box-d {
+  background: #fff;
+  border: 2px solid #c4a484;
+  border-radius: 12px;
+  padding: 10px;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+  margin-left:715px;
+
+}
+
+.user-profile-dashboard {
+  display: flex;
+  align-items: center;
+  cursor: pointer;
+}
+
+.user-profile-dashboard .profile-picture-dashboard {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  margin-right: 8px;
+}
+
+.page-content-dashboard {
+  margin-left: 260px;
+  margin-top: 80px;
+  padding: 40px;
+  width: 100%;
+}
+
+.back-bar-dashboard {
+    position: absolute;
+    padding-top: 25px;
+    margin-left:-84px;
+  display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 16px;
+    font-weight: bold;
+    color: #4a3f35;
+    cursor: pointer;
+    margin-bottom: 25px;
+    border-bottom: 1px solid #4a3f35;
+    padding-bottom: 10px;
+    width: 100%;
+    max-width: 600px;
+}
+
+.back-arrow-dashboard{
+
+}
+.back-text-dashboard{
+
+}
+

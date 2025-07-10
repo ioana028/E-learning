@@ -129,9 +129,13 @@
   padding: 20px;
   background: #fff9ec;
   border: 2px solid #c4a484;
-  width: 45%;
+  width: 40%;
   min-height: 300px;
   overflow-y: auto;
+  
+}
+.book-container{
+  margin-left: 260px;
 }
 
 

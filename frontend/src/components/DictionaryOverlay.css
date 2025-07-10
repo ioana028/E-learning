@@ -1,0 +1,84 @@
+/* Containerul principal al overlay-ului */
+.dictionary-overlay-container {
+  position: fixed;
+  bottom: 100px;
+  right: 40px;
+  width: 320px;
+  background-color: #fff9ec;
+  border: 2px solid #c4a484;
+  border-radius: 14px;
+  padding: 20px;
+  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.2);
+  z-index: 9999;
+  font-family: 'Segoe UI', sans-serif;
+}
+
+/* Headerul dicționarului */
+.dictionary-overlay-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-weight: bold;
+  margin-bottom: 12px;
+  color: #4a3f35;
+}
+
+/* Butonul de închidere */
+.dictionary-overlay-header button {
+  background: none;
+  border: none;
+  font-size: 18px;
+  cursor: pointer;
+  color: #4a3f35;
+}
+
+/* Input + dropdown + buton traducere */
+.dictionary-overlay-controls {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+/* Input de text */
+.dictionary-overlay-controls input {
+  padding: 8px;
+  font-size: 14px;
+  border-radius: 8px;
+  border: 1px solid #c4a484;
+}
+
+/* Dropdown EN↔RO */
+.dictionary-overlay-controls select {
+  padding: 6px;
+  font-size: 14px;
+  border-radius: 8px;
+  border: 1px solid #c4a484;
+  background-color: #fff;
+}
+
+/* Buton de tradus */
+.dictionary-overlay-controls button {
+  background-color: #c4a484;
+  color: white;
+  font-weight: bold;
+  border: none;
+  border-radius: 8px;
+  padding: 10px;
+  cursor: pointer;
+  transition: background 0.3s;
+}
+
+.dictionary-overlay-controls button:hover {
+  background-color: #b8946a;
+}
+
+/* Rezultatul traducerii */
+.dictionary-overlay-result {
+  margin-top: 14px;
+  font-style: italic;
+  color: #333;
+  background-color: #f7f2e5;
+  padding: 10px;
+  border-radius: 10px;
+  font-size: 14px;
+}

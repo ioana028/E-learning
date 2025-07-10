@@ -1,25 +1,135 @@
 .profil-page {
-  padding: 40px;
+  
+  margin-top: 120px;
+  padding: 0px;
+  margin-left: 0px;
   flex: 1;
   display: flex;
   flex-direction: column;
   align-items: center;
+  transform: translateX(60px);
+  
 }
 
 .profil-card {
+  
   background: #fff9ec;
   border: 2px solid #c4a484;
   border-radius: 16px;
   padding: 30px;
-  max-width: 400px;
+  max-width: 500px;
   width: 100%;
   box-shadow: 0 6px 12px rgba(0, 0, 0, 0.1);
   text-align: center;
+  
+ 
 }
 
 .profile-picture-large {
   width: 120px;
   height: 120px;
   border-radius: 50%;
-  margin-bottom: 16px;
+  margin: 0 auto 16px auto;
+  display: block;
+}
+
+
+
+.back-bar-profile{
+  display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 16px;
+    font-weight: bold;
+    color: #4a3f35;
+    cursor: pointer;
+    margin-bottom: 25px;
+    border-bottom: 1px solid #4a3f35;
+    padding-bottom: 10px;
+    width: 100%;
+    max-width: 600px;
+    position: absolute;
+    margin-left: 540px;
+    margin-top: 30px;
+}
+
+
+.profil-buttons {
+  margin-top: 16px;
+  display: flex;
+  justify-content: center;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.profil-buttons button {
+  padding: 8px 16px;
+  background-color: #fff2dd;
+  color: #4a3f35;
+  border: 1px solid #c4a484;
+  border-radius: 10px;
+  font-size: 14px;
+  cursor: pointer;
+  transition: all 0.2s ease-in-out;
+}
+
+.profil-buttons button:hover {
+  background-color: #f5dfc4;
+}
+
+.reset-button{
+width: 100%;
+    padding: 10px;
+    background-color: #c4a484;
+    color: #fff9ec;
+    border: none;
+    border-radius: 8px;
+    font-size: 14px;
+    font-weight: bold;
+    cursor: pointer;
+    transition: background 0.3s;
+    margin: 20px;
+    height: 50px;
+    width: 500px;
+}
+
+.edit-button{
+padding: 0px;
+    background-color: #c4a484;
+    color: #fff9ec;
+    border: none;
+    border-radius: 8px;
+    font-size: 14px;
+    font-weight: bold;
+    cursor: pointer;
+    transition: background 0.3s;
+    margin: 20px;
+    height: 50px;
+    width: 400px;
+    text-align: center;
+}
+.buttons-reset-edit{
+  display: flex;
+  flex-direction: row;
+  
+}
+
+.info-profil{
+  margin-left: 30px;
+ display: flex;
+  flex-direction: column;
+  align-items: flex-start; /* ← aliniere la stânga */
+  text-align: left;
+  margin-top: 12px;
+  gap: 6px;
+}
+
+.nameprofile_in_profile_page {
+  text-align: center;
+  align-self: center;
+  width: 100%;
+  font-size: 20px;
+  font-weight: bold;
+  margin-bottom: 8px;
+   margin-left: -40px;
 }

@@ -1,0 +1,45 @@
+.notebook-overlay {
+  position: fixed;
+  bottom: 90px;
+  right: 30px;
+  width: 320px;
+  height: 300px;
+  background-color: #fff9ec;
+  border: 2px solid #c4a484;
+  border-radius: 12px;
+  box-shadow: 0 8px 16px rgba(0, 0, 0, 0.15);
+  padding: 16px;
+  z-index: 1000;
+  display: flex;
+  flex-direction: column;
+}
+
+.notebook-overlay textarea {
+  flex: 1;
+  resize: none;
+  border: none;
+  padding: 10px;
+  font-size: 14px;
+  border-radius: 8px;
+  background-color: #fffef7;
+  color: #4a3f35;
+  font-family: "Segoe UI", sans-serif;
+  outline: none;
+  box-shadow: inset 0 0 4px rgba(0, 0, 0, 0.05);
+}
+
+.notebook-overlay button {
+  margin-top: 10px;
+  background-color: #c4a484;
+  color: white;
+  font-weight: bold;
+  padding: 10px;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: background 0.3s ease;
+}
+
+.notebook-overlay button:hover {
+  background-color: #b3936c;
+}

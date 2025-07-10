@@ -11,6 +11,10 @@ const { exec } = require("child_process");  //pt ml
 const multer = require("multer");
 
 
+require("dotenv").config();
+
+
+
 
 const app = express();
 app.use(cors());
@@ -384,7 +388,6 @@ app.get('/lectii/:chapterId', async (req, res) => {
     }
   }
 });
-
 app.get("/teorie/:lessonId", async (req, res) => {
   const { lessonId } = req.params;
   const authHeader = req.headers.authorization;
@@ -457,9 +460,6 @@ app.get("/teorie/:lessonId", async (req, res) => {
     }
   }
 });
-
-
-
 app.get('/exercitii/:lessonId', async (req, res) => {
   let connection;
   const { lessonId } = req.params; // preia lessonId din URL
@@ -519,8 +519,6 @@ app.get('/exercitii/:lessonId', async (req, res) => {
     return res.status(500).json({ success: false, message: 'Server error while fetching exercises' });
   }
 });
-
-
 // app.get('/exercitii/:lessonId', async (req, res) => {
 //   let connection;
 //   const { lessonId } = req.params;
@@ -585,7 +583,6 @@ app.get('/exercitii/:lessonId', async (req, res) => {
 //     }
 //   }
 // });
-
 
 function streamToString(lob) {
   return new Promise((resolve, reject) => {
@@ -727,15 +724,7 @@ app.get("/api/lesson/:lessonId/chapter", async (req, res) => {
   }
 });
 
-
-
-
-
-
 app.listen(5000, () => console.log('Backend running on http://localhost:5000'));
-
-
-
 
 // Middleware pt. static files
 app.use("/avatars", express.static(path.join(__dirname, "avatars")));
@@ -746,20 +735,74 @@ const storage = multer.diskStorage({
     cb(null, "avatars/");
   },
   filename: (req, file, cb) => {
-    const username = req.body.username;
+    const username = req.query.username; // <-- AICI!
     const ext = path.extname(file.originalname);
     cb(null, `${username}${ext}`);
   },
 });
 
+
 const upload = multer({ storage });
-
 app.post("/upload-avatar", upload.single("image"), (req, res) => {
+  console.log("Am primit un fișier:");
+  console.log("Fișier:", req.file);
+  console.log("Username:", req.body.username);
+
   res.json({ success: true, filename: req.file.filename });
+}
+
+
+);
+
+
+
+// //rewards update
+// app.post("/api/update-rewards", async (req, res) => {
+//   const { username, xp, coins } = req.body;
+//   if (!username || xp == null || coins == null) {
+//     return res.status(400).json({ success: false, message: "Lipsesc datele" });
+//   }
+
+//   try {
+//     await db.execute(
+//       `UPDATE users SET xp = xp + :xp, coins = coins + :coins WHERE username = :username`,
+//       [xp, coins, username]
+//     );
+
+//     res.json({ success: true });
+//   } catch (err) {
+//     console.error("Eroare la actualizarea XP/coins:", err);
+//     res.status(500).json({ success: false, message: "Eroare server" });
+//   }
+// });
+
+app.post("/api/update-rewards", async (req, res) => {
+  const { username, xp, coins } = req.body;
+
+  if (!username || xp == null || coins == null) {
+    return res.status(400).json({ success: false, message: "Lipsesc datele" });
+  }
+
+  try {
+    const connection = await oracledb.getConnection(dbConfig);
+
+    const result = await connection.execute(
+      `UPDATE users
+       SET xp = xp + :xp,
+           coins = coins + :coins
+       WHERE username = :username`,
+      { xp, coins, username },
+      { autoCommit: true }
+    );
+
+    await connection.close();
+
+    res.json({ success: true });
+  } catch (err) {
+    console.error("❌ Eroare la actualizarea XP/coins:", err);
+    res.status(500).json({ success: false, message: "Eroare server DB" });
+  }
 });
-
-
-
 
 
 
@@ -811,4 +854,231 @@ app.get("/api/predict-level/:userId", async (req, res) => {
     console.log("📤 Output din script:", stdout);
     res.json({ success: true, output: stdout });
   });
+});
+
+
+app.get("/api/user-stats/:username", async (req, res) => {
+  const { username } = req.params;
+
+  try {
+    const connection = await oracledb.getConnection(dbConfig);
+    const result = await connection.execute(
+      `SELECT xp, coins FROM users WHERE username = :username`,
+      [username],
+      { outFormat: oracledb.OUT_FORMAT_OBJECT }
+    );
+    await connection.close();
+
+    if (result.rows.length === 0) {
+      return res.status(404).json({ success: false, message: "User not found" });
+    }
+
+    const { XP, COINS } = result.rows[0];
+res.json({ success: true, xp: XP, coins: COINS });
+
+  } catch (err) {
+    console.error("Eroare DB:", err);
+    res.status(500).json({ success: false, message: "Eroare server" });
+  }
+});
+
+
+app.get("/api/user-profile/:username", async (req, res) => {
+  const { username } = req.params;
+
+  try {
+    const connection = await oracledb.getConnection(dbConfig);
+    const result = await connection.execute(
+      `SELECT email, joined_at, user_level, last_completed_lessons FROM users WHERE username = :username`,
+      [username],
+      { outFormat: oracledb.OUT_FORMAT_OBJECT }
+    );
+    await connection.close();
+
+    if (result.rows.length === 0) {
+      return res.status(404).json({ success: false, message: "User not found" });
+    }
+
+    const { EMAIL, JOINED_AT, USER_LEVEL, LAST_COMPLETED_LESSONS } = result.rows[0];
+
+    res.json({
+      success: true,
+      email: EMAIL,
+      joinedAt: JOINED_AT,
+      level: USER_LEVEL,
+      lastCompleted: LAST_COMPLETED_LESSONS
+
+    });
+  } catch (err) {
+    console.error("❌ Eroare profil:", err);
+    res.status(500).json({ success: false });
+  }
+});
+
+app.post("/api/reset-progress", async (req, res) => {
+  const { username } = req.body;
+
+  if (!username) {
+    return res.status(400).json({ success: false, message: "Username lipsă" });
+  }
+
+  try {
+    const connection = await oracledb.getConnection(dbConfig);
+    await connection.execute(
+      `UPDATE users SET last_completed_lessons = :resetData WHERE username = :username`,
+      [JSON.stringify({ "1": 0, "2": 0, "3": 0 }), username],
+      { autoCommit: true }
+    );
+    await connection.close();
+
+    res.json({ success: true });
+  } catch (err) {
+    console.error("❌ Eroare la reset progres:", err);
+    res.status(500).json({ success: false });
+  }
+});
+
+
+// GET – returnează notițele
+app.get("/api/notes/:username", (req, res) => {
+  const { username } = req.params;
+  const filePath = path.join(__dirname, "notes", `${username}_notes.txt`);
+
+  if (!fs.existsSync(filePath)) {
+    return res.json({ notes: "" });
+  }
+
+  fs.readFile(filePath, "utf8", (err, data) => {
+    if (err) {
+      console.error("Eroare la citirea notițelor:", err);
+      return res.status(500).json({ success: false });
+    }
+
+    res.json({ notes: data });
+  });
+});
+
+// POST – salvează notițele
+app.post("/api/notes/save", (req, res) => {
+  const { username, content } = req.body;
+
+  if (!username || content === undefined) {
+    return res.status(400).json({ success: false, message: "Date lipsă" });
+  }
+
+  const dirPath = path.join(__dirname, "notes");
+  const filePath = path.join(dirPath, `${username}_notes.txt`);
+
+  if (!fs.existsSync(dirPath)) {
+    fs.mkdirSync(dirPath);
+  }
+
+  fs.writeFile(filePath, content, (err) => {
+    if (err) {
+      console.error("Eroare la salvare:", err);
+      return res.status(500).json({ success: false });
+    }
+
+    res.json({ success: true });
+  });
+});
+app.use(express.json());
+const axios = require("axios");
+
+app.post("/api/translate", async (req, res) => {
+  const { q, source, target } = req.body;
+
+  try {
+   const response = await axios.post("https://libretranslate.de/translate", {
+      q,
+      source,
+      target,
+      format: "text",
+    }, {
+      headers: { "Content-Type": "application/json" }
+    });
+console.log("Răspuns primit de la LibreTranslate:", response.data);
+
+    res.json({ translatedText: response.data.translatedText });
+  } catch (err) {
+    console.error("Eroare la traducere:", err.message);
+    res.status(500).json({ error: "Eroare la traducere" });
+  }
+});
+
+const { GoogleGenerativeAI } = require("@google/generative-ai");
+
+const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
+
+async function getUserErrors(username) {
+  let connection;
+
+  try {
+    connection = await oracledb.getConnection(dbConfig);
+
+    const result = await connection.execute(
+      `
+      SELECT topic, COUNT(*) AS errors
+      FROM user_errors
+      WHERE user_id = (SELECT user_id FROM users WHERE username = :username)
+      GROUP BY topic
+      ORDER BY errors DESC
+      FETCH FIRST 3 ROWS ONLY
+      `,
+      [username],
+      { outFormat: oracledb.OUT_FORMAT_OBJECT }
+    );
+
+    if (result.rows.length === 0) {
+      return `🔍 Nu am găsit greșeli înregistrate pentru utilizatorul ${username}.`;
+    }
+
+    const topTopics = result.rows
+      .map(row => `${row.TOPIC} (${row.ERRORS} greșeli)`)
+      .join(", ");
+
+    return `📊 Cele mai greșite topicuri ale tale sunt: ${topTopics}.`;
+  } catch (err) {
+    console.error("Eroare DB getUserErrors:", err);
+    return "❌ Eroare la accesarea bazei de date.";
+  } finally {
+    if (connection) {
+      try {
+        await connection.close();
+      } catch (e) {
+        console.error("Eroare la închiderea conexiunii:", e);
+      }
+    }
+  }
+}
+
+
+async function runChatBot(prompt) {
+  const model = genAI.getGenerativeModel({ model: "gemini-pro" });
+
+  // Extrage username dacă a fost inclus în prompt
+  const isErrorQuery =
+    prompt.toLowerCase().includes("topicuri") &&
+    prompt.toLowerCase().includes("greșit");
+
+  const userMatch = prompt.match(/Utilizator:\s*([^\.\n]+)/i);
+  const username = userMatch?.[1]?.trim();
+
+  if (isErrorQuery && username) {
+    return await getUserErrors(username);
+  }
+
+  const result = await model.generateContent(prompt);
+  return result.response.text();
+}
+
+app.post("/api/ask-ai", async (req, res) => {
+  const { question } = req.body;
+  try {
+    const answer = await runChatBot(question);
+    res.json({ answer });
+  } catch (err) {
+    console.error("Eroare Gemini:", err);
+    res.status(500).json({ error: "AI failed" });
+  }
 });

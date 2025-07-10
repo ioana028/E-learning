@@ -9,6 +9,11 @@ import Exercitii from './components/Exercitii';
 import SetLevel from './components/SetLevel';
 import Teorie from './components/Teorie';
 import Profil from './components/Profil';
+import Notebook from './components/Notebook';
+import DashboardLayout from './components/DashboardLayout';
+import FloatingMenu from './components/FloatingMenuComponent';
+import DefinitionPage from './components/DefinitionPage';
+import ChatBot from './components/ChatBot';
 
 
 const App = () => (
@@ -23,6 +28,10 @@ const App = () => (
       <Route path="/exercitii/:lessonId" element={<Exercitii />} />
       <Route path="/set-level" element={<SetLevel />} />
       <Route path="/profil" element={<Profil />} />
+      <Route path="/notebook" element={<Notebook />} />
+      <Route path="/dashboard" element={<DashboardLayout />} />
+     <Route path="/dictionary" element={<DefinitionPage />} />
+<Route path="/ai" element={<ChatBot />} /> 
 
     </Routes>
   </Router>
