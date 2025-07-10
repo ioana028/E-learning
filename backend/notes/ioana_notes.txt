@@ -22,3 +22,6 @@ Future Perfect
 I will have done
 Future Perfect Continuous
 I will have been doing
+
+
+de repetat timpul prezent

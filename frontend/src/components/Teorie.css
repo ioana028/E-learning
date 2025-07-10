@@ -14,9 +14,14 @@
 }
 
 .book-container {
-  text-align: center;
+   font-family: 'Poppins', sans-serif;
+
   padding: 2rem;
   padding-top: 100px;
+  padding-left: 60px;
+    /* mutat puțin mai în dreapta */
+ 
+ 
 }
 
 .teorie-title {
@@ -25,24 +30,32 @@
 }
 
 .book-pages {
-  display: flex;
+   display: flex;
   justify-content: center;
+  align-items: stretch;   /* 🔒 păstrează înălțimea */
   gap: 2rem;
-  margin-bottom: 1.5rem;
+  height: 520px; /* sau 100% dacă părintele are înălțime fixă */
+  align-items: stretch;
 }
-
 .book-page {
-  width: 400px; /* mărit de la 300 */
-  height: 500px; /* mărit de la 300 */
-  font-size: 1.1rem; /* mai mare pentru text */
-  padding: 1.5rem; /* mai mult spațiu interior */
-  border: 2px solid #ccc;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  position: relative;
+  height: 500px;
+  width: 550px;
+  padding: 20px;
+  background: #fff9ec;
+  border: 2px solid #c4a484;
   border-radius: 10px;
-  background: #fdfdfd;
-  text-align: left;
-  white-space: pre-wrap;
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
+  overflow: hidden;
+}
+.book-text {
+  flex: 1;
   overflow-y: auto;
-  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1); /* opțional: un mic shadow */
+  white-space: pre-wrap;
+  line-height: 1.5;
 }
 
 
@@ -124,16 +137,7 @@
   background: #a3d6a3;
 }
 
-.book-page {
-  position: relative; /* necesar pentru poziționarea absolută a săgeților */
-  padding: 20px;
-  background: #fff9ec;
-  border: 2px solid #c4a484;
-  width: 40%;
-  min-height: 300px;
-  overflow-y: auto;
-  
-}
+
 .book-container{
   margin-left: 260px;
 }

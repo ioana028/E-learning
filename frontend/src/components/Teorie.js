@@ -37,32 +37,47 @@ const [showChatBot, setShowChatBot] = useState(false);
 
   useEffect(() => {
     const fetchTeorie = async () => {
-      try {
-        const token = localStorage.getItem("token");
-        const response = await axios.get(`http://localhost:5000/teorie/${lessonId}`, {
-          headers: { Authorization: `Bearer ${token}` },
-        });
+  try {
+    const token = localStorage.getItem("token");
+    const response = await axios.get(`http://localhost:5000/teorie/${lessonId}`, {
+      headers: { Authorization: `Bearer ${token}` },
+    });
 
-        const fullText = response.data.teorie;
+    const fullText = response.data.teorie;
+    processTeorie(fullText);
+  } catch (error) {
+    console.warn("❌ Teoria specifică nu a fost găsită, se folosește fallback...");
 
-        // Rupe teoria în "paragrafe"
-        const rawPages = fullText.split(/\n\s*\n/); // separare după paragrafe goale
+    try {
+      // înlocuiește cu un ID real sau endpoint pentru fallback
+      const fallbackResponse = await axios.get(`http://localhost:5000/teorie/default`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
 
-        // Împachetează-le câte 2
-        const doublePages = [];
-        for (let i = 0; i < rawPages.length; i += 2) {
-          doublePages.push([rawPages[i] || "", rawPages[i + 1] || ""]);
-        }
+      const fallbackText = fallbackResponse.data.teorie;
+      processTeorie(fallbackText);
+    } catch (fallbackError) {
+      console.error("❌ Eroare și la fallback:", fallbackError);
+      setPages([["❌ Teoria nu a fost găsită și nici fallback-ul nu a putut fi încărcat.", ""]]);
+    }
+  }
+};
 
-        setPages(doublePages);
-      } catch (error) {
-        console.error("Eroare la încărcarea teoriei:", error);
-        setPages([["❌ Teoria nu a fost găsită.", ""]]);
-      }
-    };
 
     fetchTeorie();
   }, [lessonId]);
+
+  const processTeorie = (text) => {
+  const rawPages = text.split(/\n\s*\n/);
+  const doublePages = [];
+
+  for (let i = 0; i < rawPages.length; i += 2) {
+    doublePages.push([rawPages[i] || "", rawPages[i + 1] || ""]);
+  }
+
+  setPages(doublePages);
+};
+
 
   const next = () => {
     if (pageIndex < pages.length - 1) setPageIndex(pageIndex + 1);
@@ -137,8 +152,6 @@ useEffect(() => {
               <img src="/images/bot.png" alt="AI" style={{ width: "33px", height: "30px", marginLeft: "-7px" }} />
               AI
             </li>
-          <li>🏆 Clasament</li>
-          <li>🛍 Magazin</li>
           <li onClick={() => navigate("/profil")}>⚙️ PROFIL</li>
 
         </ul>
@@ -156,25 +169,31 @@ useEffect(() => {
 
       <div className="book-pages">
   <div className="book-page left">
+  <div className="book-text">
     {pages[pageIndex]?.[0]}
-    {pageIndex > 0 && (
-      <button className="nav-arrow left-arrow" onClick={prev}>
-        ◀
-      </button>
-    )}
   </div>
-  <div className="book-page right">
+  {pageIndex > 0 && (
+    <button className="nav-arrow left-arrow" onClick={prev}>
+      ◀
+    </button>
+  )}
+</div>
+
+<div className="book-page right">
+  <div className="book-text">
     {pages[pageIndex]?.[1]}
-    {!isLastPage ? (
-      <button className="nav-arrow right-arrow" onClick={next}>
-        ▶
-      </button>
-    ) : (
-      <button className="nav-arrow finish-arrow" onClick={() => navigate(`/exercitii/${lessonId}`)}>
-        Verifica ce ai invatat 
-      </button>
-    )}
   </div>
+  {!isLastPage ? (
+    <button className="nav-arrow right-arrow" onClick={next}>
+      ▶
+    </button>
+  ) : (
+    <button className="nav-arrow finish-arrow" onClick={() => navigate(`/exercitii/${lessonId}`)}>
+      Verifica ce ai invatat 
+    </button>
+  )}
+</div>
+
    <FloatingMenuComponent
   onOpenNotebook={() => setShowNotebook(true)}
   onOpenDictionary={() => setShowDictionary(true)} // adaugă și asta dacă nu ai

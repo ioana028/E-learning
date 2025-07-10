@@ -382,12 +382,12 @@ useEffect(() => {
         return (
           <div className="container-exercitiu">
             <h3>Tradu propoziția:</h3>
-            <button
+            {/* <button
               onClick={() => speakText(question)}
               style={{ marginBottom: "10px", padding: "6px 12px", borderRadius: "6px", cursor: "pointer" }}
             >
               🔊 Ascultă propoziția
-            </button>
+            </button> */}
             <div style={{ fontStyle: "italic", marginBottom: "10px" }}>{question}</div>
 
             <div
@@ -727,8 +727,6 @@ useEffect(() => {
               <img src="/images/bot.png" alt="AI" style={{ width: "33px", height: "30px", marginLeft: "-7px" }} />
               AI
             </li>
-          <li>🏆 Clasament</li>
-          <li>🛍 Magazin</li>
           <li onClick={() => navigate("/profil")}>⚙️ PROFIL</li>
 
         </ul>

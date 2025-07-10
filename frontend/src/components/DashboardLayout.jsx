@@ -95,8 +95,6 @@ const DashboardLayout = ({ children, showBack = true }) => {
             <img src="/images/bot.png" alt="AI" style={{ width: "33px", height: "30px", marginLeft: "-7px" }} />
             AI
           </li>
-          <li>🏆 Clasament</li>
-          <li>🛍 Magazin</li>
           <li onClick={() => navigate("/profil")}>⚙️ Profil</li>
         </ul>
 

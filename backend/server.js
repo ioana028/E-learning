@@ -1006,6 +1006,120 @@ console.log("Răspuns primit de la LibreTranslate:", response.data);
   }
 });
 
+app.post("/api/update-level", async (req, res) => {
+  const { username, level } = req.body;
+  let connection;
+
+  try {
+    connection = await oracledb.getConnection(dbConfig);
+
+    await connection.execute(
+      `UPDATE users SET level = :level WHERE username = :username`,
+      [level, username],
+      { autoCommit: true }
+    );
+
+    res.json({ success: true });
+  } catch (err) {
+    console.error("Eroare DB la update level:", err);
+    res.status(500).json({ success: false, message: "DB error" });
+  } finally {
+    if (connection) await connection.close();
+  }
+});
+
+app.post("/api/update-english-level", async (req, res) => {
+  const { username, english_level } = req.body;
+  let connection;
+
+  try {
+    connection = await oracledb.getConnection(dbConfig);
+    await connection.execute(
+      `UPDATE users SET english_level = :english_level WHERE username = :username`,
+      [english_level, username],
+      { autoCommit: true }
+    );
+    res.json({ success: true });
+  } catch (err) {
+    console.error("Eroare la update english_level:", err);
+    res.status(500).json({ success: false, message: "Eroare la actualizare." });
+  } finally {
+    if (connection) {
+      try {
+        await connection.close();
+      } catch (err) {
+        console.error("Eroare la închiderea conexiunii:", err);
+      }
+    }
+  }
+});
+
+app.post("/api/recommend-level", async (req, res) => {
+  const { username } = req.body;
+  let connection;
+
+  try {
+    connection = await oracledb.getConnection(dbConfig);
+
+    const result = await connection.execute(
+      `SELECT user_id FROM users WHERE username = :username`,
+      [username],
+      { outFormat: oracledb.OUT_FORMAT_OBJECT }
+    );
+
+    const userId = result.rows?.[0]?.USER_ID;
+    if (!userId) {
+      return res.status(404).json({ error: "Utilizatorul nu a fost găsit." });
+    }
+
+    const cmd = `python ./ml/predict_user_level.py ${userId}`;
+    exec(cmd, (error, stdout, stderr) => {
+      if (error) {
+        console.error("❌ Eroare la rularea scriptului ML:", error.message);
+        return res.status(500).json({ error: "Eroare la rularea modelului ML" });
+      }
+
+      console.log("✅ Output ML:", stdout);
+
+      // Caută nivelul prezis în output
+      const match = stdout.toString().match(/Nivel prezis.*?:\s*([A-Z0-9]+)/i);
+      const predictedLevel = match?.[1];
+
+      if (!predictedLevel) {
+        return res.status(200).json({ message: "Nu s-a putut detecta un nivel recomandat." });
+      }
+
+      return res.json({
+        success: true,
+        level: predictedLevel // ← trimitem doar B1, C2 etc.
+      });
+    });
+  } catch (err) {
+    console.error("❌ Eroare în /api/recommend-level:", err);
+    res.status(500).json({ error: "Eroare internă server" });
+  } finally {
+    if (connection) {
+      try {
+        await connection.close();
+      } catch (e) {
+        console.error("❌ Eroare la închiderea conexiunii:", e);
+      }
+    }
+  }
+});
+
+app.get("/teorie/default", (req, res) => {
+  const defaultPath = path.join(__dirname, "teorie", "default.txt");
+
+  fs.readFile(defaultPath, "utf8", (err, data) => {
+    if (err) return res.status(500).json({ error: "Nu s-a putut încărca fallback-ul." });
+    res.json({ teorie: data });
+  });
+});
+
+
+
+
 const { GoogleGenerativeAI } = require("@google/generative-ai");
 
 const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
