@@ -7,32 +7,166 @@ export const askAI = async (prompt, abortSignal) => {
   let username = "Utilizator";
 
   if (token) {
-    const decoded = jwtDecode(token);
-    username = decoded.username;
+    try {
+      const decoded = jwtDecode(token);
+      username = decoded.username;
+    } catch (e) {
+      console.error("Eroare la decodarea tokenului:", e);
+    }
   }
-  const API_KEY = process.env.REACT_APP_GEMINI_KEY;
-  const url =
-    "https://generativelanguage.googleapis.com/v1beta/models/" +
-    "gemini-1.5-flash:generateContent?key=" + API_KEY;
+
+  console.log("Prompt primit:", prompt);
+
+  // 🔣 Normalizează textul
+  const normalizeText = (text) =>
+    text.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase();
+
+  const normalizedPrompt = normalizeText(prompt.trim());
+  console.log("Prompt normalizat:", normalizedPrompt);
+
+  // 🔍 Întrebare: la ce topicuri am greșit?
+  const isErrorTopicQuestion =
+    normalizedPrompt === "la ce topicuri am gresit?" ||
+    (normalizedPrompt.includes("topic") && normalizedPrompt.includes("gresit"));
+
+  if (isErrorTopicQuestion) {
+    console.log("📌 Detectată întrebare despre topicuri greșite");
+
+    try {
+      const res = await fetch(`http://localhost:5000/api/user-errors/${username}`, {
+        signal: abortSignal,
+      });
+
+      if (!res.ok) {
+        console.error("Eroare la fetch user-errors:", res.status);
+        throw new Error("Eroare la preluarea datelor din baza de date.");
+      }
+
+      const data = await res.json();
+      console.log("📊 Date returnate:", data);
+
+      if (!data || data.length === 0) {
+        return "Nu ai greșit la niciun topic până acum! 🥳";
+      }
+
+      const reply =
+        "Ai greșit cel mai mult la următoarele topicuri:\n" +
+        data
+          .map(({ TOPIC, topic, COUNT, count }) =>
+            `• ${TOPIC || topic} (${COUNT || count} greșeli)`
+          )
+          .join("\n");
+
+      return reply;
+    } catch (error) {
+      console.error("Eroare la preluarea topicurilor greșite:", error);
+      return "❌ Nu am putut prelua datele despre greșeli din baza de date.";
+    }
+  }
+
+  // 🔁 Întrebare: ce ar trebui să repet?
+  const isRepeatQuestion =
+    normalizedPrompt.includes("ar trebui sa repet") ||
+    normalizedPrompt.includes("ce sa repet") ||
+    normalizedPrompt.includes("repet") ||
+    normalizedPrompt.includes("ce ar trebui sa invat");
+
+  if (isRepeatQuestion) {
+    console.log("🔁 Detectată întrebare despre ce să repeți");
+
+    try {
+      const res = await fetch(`http://localhost:5000/api/user-errors/${username}`, {
+        signal: abortSignal,
+      });
+
+      if (!res.ok) {
+        console.error("Eroare la fetch user-errors:", res.status);
+        throw new Error("Eroare la preluarea datelor din baza de date.");
+      }
+
+      const data = await res.json();
+      console.log("📊 Date pentru recomandare repetare:", data);
+
+      if (!data || data.length === 0) {
+        return "🎉 Nu e nevoie să repeți nimic acum — nicio greșeală detectată!";
+      }
+
+      const top = data[0];
+      const topic = top.TOPIC || top.topic;
+      const count = top.COUNT || top.count;
+
+      return `🔁 Ar fi bine să repeți topicul **"${topic}"** – ai avut ${count} greșeli acolo.`;
+    } catch (error) {
+      console.error("Eroare la recomandarea topicului de repetat:", error);
+      return "❌ Nu am putut determina ce ar trebui să repeți.";
+    }
+  }
+
+  // 📧 Întrebare: ce email am?
+  const isEmailQuestion =
+    normalizedPrompt === "ce email am" || normalizedPrompt.includes("email");
+
+  if (isEmailQuestion) {
+    console.log("📧 Detectată întrebare despre email");
+
+    try {
+      const res = await fetch(`http://localhost:5000/api/user-profile/${username}`, {
+        signal: abortSignal,
+      });
+
+      if (!res.ok) throw new Error("Eroare la fetch profil.");
+
+      const data = await res.json();
+      console.log("📬 Email din API:", data.email);
+
+      return data.email
+        ? `📧 Emailul tău este: ${data.email}`
+        : "❌ Nu am găsit emailul tău în profil.";
+    } catch (err) {
+      console.error("❌ Eroare la obținerea emailului:", err);
+      return "❌ Nu am putut prelua emailul din profil.";
+    }
+  }
+
+  // 🤖 Altfel, trimite promptul la Gemini
+  try {
+    const API_KEY = process.env.REACT_APP_GEMINI_KEY;
+    const url =
+      "https://generativelanguage.googleapis.com/v1beta/models/" +
+      "gemini-1.5-flash:generateContent?key=" + API_KEY;
+
     const promptWithUser = `Utilizator: ${username}. Întrebare: ${prompt}`;
 
-   const res = await fetch(url, {
-    method: "POST",
-    signal: abortSignal,
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({
-      contents: [{ role: "user", parts: [{ text: promptWithUser }] }],
-      generationConfig: { temperature: 0.8 }
-    })
-  });
+    const res = await fetch(url, {
+      method: "POST",
+      signal: abortSignal,
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        contents: [{ role: "user", parts: [{ text: promptWithUser }] }],
+        generationConfig: { temperature: 0.8 },
+      }),
+    });
 
-  if (!res.ok) throw new Error("Gemini request failed");
-  const data = await res.json();
-  return (
-    data?.candidates?.[0]?.content?.parts?.[0]?.text ||
-    "-- no answer received --"
-  );
+    if (!res.ok) {
+      console.error("Gemini API a răspuns cu eroare:", res.status);
+      throw new Error("Gemini request failed");
+    }
+
+    const data = await res.json();
+    console.log("Răspuns Gemini:", data);
+
+    return (
+      data?.candidates?.[0]?.content?.parts?.[0]?.text ||
+      "-- no answer received --"
+    );
+  } catch (err) {
+    console.error("Eroare la trimiterea către Gemini:", err);
+    throw err;
+  }
 };
+
+
+
 
 export default function ChatBot() {
   const [messages, setMessages] = useState([]);

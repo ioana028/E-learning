@@ -1120,79 +1120,216 @@ app.get("/teorie/default", (req, res) => {
 
 
 
-const { GoogleGenerativeAI } = require("@google/generative-ai");
 
-const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
+// const { GoogleGenerativeAI } = require("@google/generative-ai");
 
-async function getUserErrors(username) {
+// const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
+
+// async function getUserErrors(username) {
+//   let connection;
+
+//   try {
+//     connection = await oracledb.getConnection(dbConfig);
+
+//     const result = await connection.execute(
+//       `
+//       SELECT topic, COUNT(*) AS errors
+//       FROM user_errors
+//       WHERE user_id = (SELECT user_id FROM users WHERE username = :username)
+//       GROUP BY topic
+//       ORDER BY errors DESC
+//       FETCH FIRST 3 ROWS ONLY
+//       `,
+//       [username],
+//       { outFormat: oracledb.OUT_FORMAT_OBJECT }
+//     );
+
+//     if (result.rows.length === 0) {
+//       return `🔍 Nu am găsit greșeli înregistrate pentru utilizatorul ${username}.`;
+//     }
+
+//     const topTopics = result.rows
+//       .map(row => `${row.TOPIC} (${row.ERRORS} greșeli)`)
+//       .join(", ");
+
+//     return `📊 Cele mai greșite topicuri ale tale sunt: ${topTopics}.`;
+//   } catch (err) {
+//     console.error("Eroare DB getUserErrors:", err);
+//     return "❌ Eroare la accesarea bazei de date.";
+//   } finally {
+//     if (connection) {
+//       try {
+//         await connection.close();
+//       } catch (e) {
+//         console.error("Eroare la închiderea conexiunii:", e);
+//       }
+//     }
+//   }
+// }async function runChatBot(prompt) {
+//   const API_KEY = process.env.GEMINI_API_KEY;
+//   console.log("🔑 API KEY:", API_KEY?.slice(0, 8)); // Evită să o loghezi complet
+//   console.log("📨 Prompt primit:", prompt);
+
+//   if (!API_KEY) {
+//     console.error("❗ API KEY lipsește!");
+//     return "❌ Cheia API lipsește.";
+//   }
+
+//   const isErrorQuery =
+//     prompt.toLowerCase().includes("topicuri") &&
+//     prompt.toLowerCase().includes("greșit");
+
+//   const userMatch = prompt.match(/Utilizator:\s*([^\.\n]+)/i);
+//   const username = userMatch?.[1]?.trim();
+//   if (isErrorQuery && username) {
+//     console.log("ℹ️ Rulăm getUserErrors pentru:", username);
+//     return await getUserErrors(username);
+//   }
+
+//   const url = `https://generativelanguage.googleapis.com/v1beta2/models/chat-bison-001:generateMessage?key=${API_KEY}`;
+//   const payload = {
+//     prompt: {
+//       messages: [
+//         {
+//           author: "user",
+//           content: prompt,
+//         },
+//       ],
+//     },
+//     temperature: 0.7,
+//     candidateCount: 1,
+//   };
+
+//   try {
+//     const res = await fetch(url, {
+//       method: "POST",
+//       headers: { "Content-Type": "application/json" },
+//       body: JSON.stringify(payload),
+//     });
+
+//     console.log("📡 Status răspuns:", res.status);
+//     const raw = await res.text();
+
+//     if (!res.ok) {
+//       console.error("❌ Eroare API PaLM:", raw);
+//       return "❌ Eroare la apelarea PaLM.";
+//     }
+
+//     const data = JSON.parse(raw);
+//     console.log("✅ Răspuns PaLM:", data);
+//     return data?.candidates?.[0]?.content || "-- fără răspuns de la PaLM --";
+//   } catch (err) {
+//     console.error("💥 Eroare fetch PaLM:", err);
+//     return "❌ Eroare la comunicarea cu AI-ul.";
+//   }
+// }
+
+
+app.get("/api/user-errors/:username", async (req, res) => {
+  const username = req.params.username;
   let connection;
 
   try {
+    console.log(`🔍 Caut erorile pentru user: ${username}`);
     connection = await oracledb.getConnection(dbConfig);
+    console.log("✅ Conectat la Oracle DB");
 
-    const result = await connection.execute(
-      `
-      SELECT topic, COUNT(*) AS errors
-      FROM user_errors
-      WHERE user_id = (SELECT user_id FROM users WHERE username = :username)
-      GROUP BY topic
-      ORDER BY errors DESC
-      FETCH FIRST 3 ROWS ONLY
-      `,
+    // Găsește user_id pe baza username-ului
+    const userResult = await connection.execute(
+      `SELECT user_id FROM users WHERE username = :username`,
       [username],
       { outFormat: oracledb.OUT_FORMAT_OBJECT }
     );
 
-    if (result.rows.length === 0) {
-      return `🔍 Nu am găsit greșeli înregistrate pentru utilizatorul ${username}.`;
+    if (userResult.rows.length === 0) {
+      console.log("❌ Utilizator inexistent.");
+      return res.status(404).json({ error: "User not found" });
     }
 
-    const topTopics = result.rows
-      .map(row => `${row.TOPIC} (${row.ERRORS} greșeli)`)
-      .join(", ");
+    const userId = userResult.rows[0].USER_ID;
+    console.log("🆔 user_id =", userId);
 
-    return `📊 Cele mai greșite topicuri ale tale sunt: ${topTopics}.`;
+    // Obține topicurile greșite
+    const errorsResult = await connection.execute(
+      `SELECT topic, COUNT(*) AS count
+       FROM user_errors
+       WHERE user_id = :userId
+       GROUP BY topic
+       ORDER BY count DESC`,
+      [userId],
+      { outFormat: oracledb.OUT_FORMAT_OBJECT }
+    );
+
+    console.log("📊 Rezultat erori:", errorsResult.rows);
+
+    res.json(errorsResult.rows); // direct [{ topic: ..., count: ... }, ...]
   } catch (err) {
-    console.error("Eroare DB getUserErrors:", err);
-    return "❌ Eroare la accesarea bazei de date.";
+    console.error("❌ Eroare la ruta /api/user-errors/:username:", err);
+    res.status(500).json({ error: "Database error", details: err.message });
   } finally {
     if (connection) {
       try {
         await connection.close();
+        console.log("🔌 Conexiune închisă");
       } catch (e) {
-        console.error("Eroare la închiderea conexiunii:", e);
+        console.error("❌ Eroare la închiderea conexiunii:", e);
       }
     }
   }
-}
+});
 
+app.get("/api/user-profile/:username", async (req, res) => {
+  const { username } = req.params;
+  let connection;
 
-async function runChatBot(prompt) {
-  const model = genAI.getGenerativeModel({ model: "gemini-pro" });
+  console.log(`📩 [API] Cerere profil pentru user: ${username}`);
 
-  // Extrage username dacă a fost inclus în prompt
-  const isErrorQuery =
-    prompt.toLowerCase().includes("topicuri") &&
-    prompt.toLowerCase().includes("greșit");
-
-  const userMatch = prompt.match(/Utilizator:\s*([^\.\n]+)/i);
-  const username = userMatch?.[1]?.trim();
-
-  if (isErrorQuery && username) {
-    return await getUserErrors(username);
-  }
-
-  const result = await model.generateContent(prompt);
-  return result.response.text();
-}
-
-app.post("/api/ask-ai", async (req, res) => {
-  const { question } = req.body;
   try {
-    const answer = await runChatBot(question);
-    res.json({ answer });
+    connection = await oracledb.getConnection(dbConfig);
+    console.log("✅ Conexiune DB stabilită");
+
+    const result = await connection.execute(
+      `SELECT 
+         username, 
+         email, 
+         joined_at, 
+         user_level, 
+         english_level, 
+         xp, 
+         coins 
+       FROM users 
+       WHERE username = :username`,
+      [username],
+      { outFormat: oracledb.OUT_FORMAT_OBJECT }
+    );
+
+    console.log("📦 Rezultat DB:", result.rows);
+
+    if (result.rows.length === 0) {
+      console.log("❌ Utilizator inexistent");
+      return res.status(404).json({ success: false, message: "User not found" });
+    }
+
+    const row = result.rows[0];
+    console.log("📤 Trimitem:", row);
+
+    res.json({
+      success: true,
+      username: row.USERNAME,
+      email: row.EMAIL,
+      joinedAt: row.JOINED_AT,
+      level: row.USER_LEVEL,
+      englishLevel: row.ENGLISH_LEVEL,
+      xp: row.XP,
+      coins: row.COINS
+    });
   } catch (err) {
-    console.error("Eroare Gemini:", err);
-    res.status(500).json({ error: "AI failed" });
+    console.error("❌ Eroare DB:", err);
+    res.status(500).json({ success: false, message: "Eroare server" });
+  } finally {
+    if (connection) {
+      await connection.close();
+      console.log("🔌 Conexiune DB închisă");
+    }
   }
 });
