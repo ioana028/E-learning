@@ -4,12 +4,12 @@ import axios from "axios";
 import { jwtDecode } from "jwt-decode";
 import "./Profil.css";
 
-
 const mapEnglishToLabel = (level) => {
+  if (!level || typeof level !== "string") return "usor";
   if (level.startsWith("A")) return "usor";
   if (level.startsWith("B")) return "mediu";
   if (level.startsWith("C")) return "avansat";
-  return "usor"; // fallback
+  return "usor";
 };
 
 const mapLevelToLabel = (level) => {
@@ -39,11 +39,10 @@ const Profil = () => {
   const [joinedAt, setJoinedAt] = useState("");
   const [level, setLevel] = useState(1);
   const [englishLevel, setEnglishLevel] = useState("A2");
-const [selectedLabel, setSelectedLabel] = useState("usor");
-const [isLoading, setIsLoading] = useState(false);
-const [recommendedLevel, setRecommendedLevel] = useState(null); // Mediu
-const [rawLevel, setRawLevel] = useState(null); // B2
-
+  const [selectedLabel, setSelectedLabel] = useState(null); // ← nu e selectat nimic implicit
+  const [isLoading, setIsLoading] = useState(false);
+  const [recommendedLevel, setRecommendedLevel] = useState(null);
+  const [rawLevel, setRawLevel] = useState(null);
 
   const fileInputRef = useRef(null);
 
@@ -58,11 +57,15 @@ const [rawLevel, setRawLevel] = useState(null); // B2
       axios.get(`http://localhost:5000/api/user-profile/${user}`)
         .then((res) => {
           if (res.data.success) {
+            console.log("Profil API răspuns:", res.data);
             setEmail(res.data.email);
             setJoinedAt(new Date(res.data.joinedAt).toLocaleDateString());
             setLevel(res.data.level);
             setEnglishLevel(res.data.english_level || "A2");
-  setSelectedLabel(mapEnglishToLabel(res.data.english_level));
+            // Nu setăm selectedLabel aici pentru a nu selecta nimic implicit
+            // setSelectedLabel(mapEnglishToLabel(res.data.english_level));
+            console.log("English level from backend:", res.data.english_level);
+            console.log("Mapped label:", mapEnglishToLabel(res.data.english_level));
           }
         })
         .catch((err) => console.log("Eroare la profil:", err));
@@ -106,24 +109,22 @@ const [rawLevel, setRawLevel] = useState(null); // B2
   };
 
   const handleChangeEnglishLevel = async (label) => {
-  const newLevel = mapLabelToEnglish[label];
-  try {
-    await axios.post("http://localhost:5000/api/update-english-level", {
-      username,
-      english_level: newLevel,
-    });
-    setEnglishLevel(newLevel);
-    setSelectedLabel(label);
-  } catch (err) {
-    console.error("❌ Eroare la actualizarea nivelului:", err);
-  }
-};
-
+    const newLevel = mapLabelToEnglish[label];
+    try {
+      await axios.post("http://localhost:5000/api/update-english-level", {
+        username,
+        english_level: newLevel,
+      });
+      setEnglishLevel(newLevel);
+      setSelectedLabel(label); // Se setează doar la click, deci activ doar butonul apăsat
+    } catch (err) {
+      console.error("❌ Eroare la actualizarea nivelului:", err);
+    }
+  };
 
   const goToEdit = () => {
     navigate("/editare-profil");
   };
-
 
   const handleFileChange = async (event) => {
     const file = event.target.files[0];
@@ -149,52 +150,52 @@ const [rawLevel, setRawLevel] = useState(null); // B2
   };
 
   const handleRecommendation = async () => {
-  try {
-    const res = await axios.post("http://localhost:5000/api/recommend-level", { username });
-    const recommendedLevel = res.data.level;
+    try {
+      const res = await axios.post("http://localhost:5000/api/recommend-level", { username });
+      const recommendedLevel = res.data.level;
 
-    if (recommendedLevel) {
-      setLevel(recommendedLevel); // actualizează nivelul în UI
+      if (recommendedLevel) {
+        setLevel(recommendedLevel);
 
-      const label = recommendedLevel.startsWith("A") ? "usor"
-                 : recommendedLevel.startsWith("B") ? "mediu"
-                 : "avansat";
+        const label = recommendedLevel.startsWith("A") ? "usor"
+                   : recommendedLevel.startsWith("B") ? "mediu"
+                   : "avansat";
 
-      setSelectedLabel(label); // dacă ai switch-ul deja implementat
+        setSelectedLabel(label);
 
-      alert(`🔍 Nivelul recomandat este ${recommendedLevel} (${label})`);
-    } else {
-      alert("⚠️ Nu s-a putut recomanda un nivel.");
+        alert(`🔍 Nivelul recomandat este ${recommendedLevel} (${label})`);
+      } else {
+        alert("⚠️ Nu s-a putut recomanda un nivel.");
+      }
+    } catch (err) {
+      console.error("❌ Eroare la recomandare:", err);
+      alert("A apărut o eroare la recomandarea nivelului.");
     }
-  } catch (err) {
-    console.error("❌ Eroare la recomandare:", err);
-    alert("A apărut o eroare la recomandarea nivelului.");
-  }
-};
+  };
 
-const fetchRecommendedLevel = async () => {
-  setIsLoading(true);
-  setRecommendedLevel(null);
-  setRawLevel(null);
+  const fetchRecommendedLevel = async () => {
+    setIsLoading(true);
+    setRecommendedLevel(null);
+    setRawLevel(null);
 
-  try {
-    const res = await axios.post("http://localhost:5000/api/recommend-level", {
-      username: username,
-    });
+    try {
+      const res = await axios.post("http://localhost:5000/api/recommend-level", {
+        username: username,
+      });
 
-    if (res.data && res.data.level) {
-      setRawLevel(res.data.level);
-      setRecommendedLevel(mapLevelToLabel(res.data.level));
-    } else {
-      setRecommendedLevel("N/A");
+      if (res.data && res.data.level) {
+        setRawLevel(res.data.level);
+        setRecommendedLevel(mapLevelToLabel(res.data.level));
+      } else {
+        setRecommendedLevel("N/A");
+      }
+    } catch (err) {
+      console.error("❌ Eroare recomandare:", err);
+      setRecommendedLevel("Eroare");
+    } finally {
+      setIsLoading(false);
     }
-  } catch (err) {
-    console.error("❌ Eroare recomandare:", err);
-    setRecommendedLevel("Eroare");
-  } finally {
-    setIsLoading(false);
-  }
-};
+  };
 
   return (
     <div className="dashboard-container">
@@ -204,11 +205,17 @@ const fetchRecommendedLevel = async () => {
           <li onClick={() => navigate("/chapters")}>📖 Capitole</li>
           <li onClick={() => navigate("/notebook")}>📓 Notițe</li>
           <li onClick={() => navigate("/dictionary")}>📘 Dicționar</li>
-            <li onClick={() => navigate("/ai")} style={{ display: "flex", alignItems: "center", gap: "8px", cursor: "pointer" }}>
-              <img src="/images/bot.png" alt="AI" style={{ width: "33px", height: "30px", marginLeft: "-7px" }} />
-              AI
-            </li>
-          
+          <li
+            onClick={() => navigate("/ai")}
+            style={{ display: "flex", alignItems: "center", gap: "8px", cursor: "pointer" }}
+          >
+            <img
+              src="/images/bot.png"
+              alt="AI"
+              style={{ width: "33px", height: "30px", marginLeft: "-7px" }}
+            />
+            AI
+          </li>
           <li onClick={() => navigate("/profil")}>⚙️ PROFIL</li>
         </ul>
       </aside>
@@ -236,58 +243,56 @@ const fetchRecommendedLevel = async () => {
             style={{ display: "none" }}
           />
           <div className="info-profil">
-          <h3 className="nameprofile_in_profile_page">{name}</h3>
-          <p><strong>Email:</strong> {email}</p>
-          <p><strong>Membru din:</strong> {joinedAt}</p>
-          <p><strong>XP:</strong> {xp}</p>
-          <p style={{ display: "flex", alignItems: "center", gap: "6px", margin: 0 }}>
-            <img
-              src="/images/coin.png"
-              alt="coin"
-              style={{ width: "18px", height: "18px" }}
-            />
-            {coins}
-          </p>
-          <div className="english-level-section">
-  <p className="level-label">Alege nivelul de engleză:</p>
-  <div className="switch-buttons">
-    {["usor", "mediu", "avansat"].map((label) => (
-      <button
-        key={label}
-        className={`level-btn ${selectedLabel === label ? "active" : ""}`}
-        onClick={() => handleChangeEnglishLevel(label)}
-      >
-        {label.charAt(0).toUpperCase() + label.slice(1)}
-      </button>
-    ))}
-  </div>
-</div>
+            <h3 className="nameprofile_in_profile_page">{name}</h3>
+            <p>
+              <strong>Email:</strong> {email}
+            </p>
+            <p>
+              <strong>Membru din:</strong> {joinedAt}
+            </p>
+            <p>
+              <strong>XP:</strong> {xp}
+            </p>
+            <p style={{ display: "flex", alignItems: "center", gap: "6px", margin: 0 }}>
+              <img src="/images/coin.png" alt="coin" style={{ width: "18px", height: "18px" }} />
+              {coins}
+            </p>
+            <div className="english-level-section">
+              <p className="level-label">Alege nivelul de engleză:</p>
+              <div className="switch-buttons">
+                {["usor", "mediu", "avansat"].map((label) => (
+                  <button
+                    key={label}
+                    className={`level-btn ${selectedLabel === label ? "active" : ""}`}
+                    onClick={() => handleChangeEnglishLevel(label)}
+                  >
+                    {label.charAt(0).toUpperCase() + label.slice(1)}
+                  </button>
+                ))}
+              </div>
+            </div>
 
-<div className="recomandare-box">
-  <button onClick={fetchRecommendedLevel} className="recommend-btn">
-    📈 Recomandă nivel
-    {isLoading && <span className="loader" />}
-  </button>
+            <div className="recomandare-box">
+              <button onClick={fetchRecommendedLevel} className="recommend-btn">
+                📈 Recomandă nivel
+                {isLoading && <span className="loader" />}
+              </button>
 
-  {!isLoading && recommendedLevel && (
-    <div className="recommended-result">
-      Recomandat: <strong>{recommendedLevel}</strong> {rawLevel && ``}
-    </div>
-  )}
-</div>
-
-
-
+              {!isLoading && recommendedLevel && (
+                <div className="recommended-result">
+                  Recomandat: <strong>{recommendedLevel}</strong> {rawLevel && ``}
+                </div>
+              )}
+            </div>
           </div>
-          <div class="buttons-reset-edit">
-          <button onClick={handleResetProgress} className="reset-button">
-             Resetează progresul
-          </button>
-
-          {/* <button onClick={goToEdit} className="edit-button">
+          <div className="buttons-reset-edit">
+            <button onClick={handleResetProgress} className="reset-button">
+              Resetează progresul
+            </button>
+            {/* <button onClick={goToEdit} className="edit-button">
             ✏️ Editează profil
           </button> */}
-</div>
+          </div>
         </div>
       </div>
     </div>
