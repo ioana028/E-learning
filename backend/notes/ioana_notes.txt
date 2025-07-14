@@ -25,3 +25,6 @@ I will have been doing
 
 
 de repetat timpul prezent
+ Therefore = așadar
+However = totuși
+ Let me introduce myself. = Permite-mi să mă prezint.

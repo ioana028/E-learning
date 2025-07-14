@@ -19,7 +19,12 @@ const Login = () => {
       if (response.data.success  && response.data.token) {
         localStorage.setItem("token", response.data.token); // ✅ Store token
         console.log("✅ Token saved in localStorage:", response.data.token);
-        navigate("/chapters");
+        if (username === "prof") {
+  navigate("/prof-dashboard");
+} else {
+  navigate("/chapters");
+}
+
       } else {
         console.error("❌ Login failed:", response.data.message);
         setError("Invalid credentials");

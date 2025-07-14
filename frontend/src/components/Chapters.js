@@ -5,6 +5,12 @@ import "./Chapters.css"; // Import stilul separat
 import { jwtDecode } from "jwt-decode";
 import { askAI } from "./ChatBot";
 
+import FloatingMenuComponent from "./FloatingMenuComponent";
+import NotebookOverlay from "./NotebookOverlay";
+import DictionaryOverlay from "./DictionaryOverlay";
+import ChatBotOverlay from "./ChatBotOverlay";
+
+
 
 
 
@@ -29,6 +35,10 @@ const Chapters = () => {
   const [xp, setXp] = useState(0);
   const [coins, setCoins] = useState(0);
   const [aiReply, setAiReply] = useState("");
+  const [showNotebook, setShowNotebook] = useState(false);
+const [showDictionary, setShowDictionary] = useState(false);
+const [showChatBot, setShowChatBot] = useState(false);
+
   const askTapped = async () => {
     const resp = await askAI("Explică diferența dintre ...");
     setAiReply(resp);
@@ -142,11 +152,27 @@ const Chapters = () => {
               AI
             </li>
             <li onClick={() => navigate("/profil")}>⚙️ PROFIL</li>
-
+            <li onClick={() => navigate("/teste")}>📝 Teste</li>
           </ul>
         </aside>
 
         <main className="chapters-content">
+          <FloatingMenuComponent
+  onOpenNotebook={() => setShowNotebook(true)}
+  onOpenDictionary={() => setShowDictionary(true)}
+  onOpenChatBot={() => setShowChatBot(true)}
+/>
+
+{showNotebook && (
+  <NotebookOverlay onClose={() => setShowNotebook(false)} />
+)}
+
+{showDictionary && (
+  <DictionaryOverlay onClose={() => setShowDictionary(false)} />
+)}
+
+{showChatBot && <ChatBotOverlay onClose={() => setShowChatBot(false)} />}
+
           <div className="back-bar" onClick={() => navigate(-1)}>
             <span className="back-arrow">←</span>
             <span className="back-text">Înapoi</span>

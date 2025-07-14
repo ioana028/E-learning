@@ -14,6 +14,8 @@ import DashboardLayout from './components/DashboardLayout';
 import FloatingMenu from './components/FloatingMenuComponent';
 import DefinitionPage from './components/DefinitionPage';
 import ChatBot from './components/ChatBot';
+import Teste from './components/Teste';
+import ProfDashboard from './components/ProfDashboard';
 
 
 const App = () => (
@@ -32,6 +34,8 @@ const App = () => (
       <Route path="/dashboard" element={<DashboardLayout />} />
      <Route path="/dictionary" element={<DefinitionPage />} />
 <Route path="/ai" element={<ChatBot />} /> 
+<Route path="/teste" element={<Teste />} /> 
+<Route path="/prof-dashboard" element={<ProfDashboard />} />
 
     </Routes>
   </Router>

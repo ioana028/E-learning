@@ -39,10 +39,12 @@ const Profil = () => {
   const [joinedAt, setJoinedAt] = useState("");
   const [level, setLevel] = useState(1);
   const [englishLevel, setEnglishLevel] = useState("A2");
-  const [selectedLabel, setSelectedLabel] = useState(null); // ← nu e selectat nimic implicit
+  const [selectedLabel, setSelectedLabel] = useState(null);
   const [isLoading, setIsLoading] = useState(false);
   const [recommendedLevel, setRecommendedLevel] = useState(null);
   const [rawLevel, setRawLevel] = useState(null);
+  const [grades, setGrades] = useState([]);
+  const [showCatalog, setShowCatalog] = useState(false);
 
   const fileInputRef = useRef(null);
 
@@ -57,20 +59,14 @@ const Profil = () => {
       axios.get(`http://localhost:5000/api/user-profile/${user}`)
         .then((res) => {
           if (res.data.success) {
-            console.log("Profil API răspuns:", res.data);
             setEmail(res.data.email);
             setJoinedAt(new Date(res.data.joinedAt).toLocaleDateString());
             setLevel(res.data.level);
             setEnglishLevel(res.data.english_level || "A2");
-            // Nu setăm selectedLabel aici pentru a nu selecta nimic implicit
-            // setSelectedLabel(mapEnglishToLabel(res.data.english_level));
-            console.log("English level from backend:", res.data.english_level);
-            console.log("Mapped label:", mapEnglishToLabel(res.data.english_level));
           }
         })
         .catch((err) => console.log("Eroare la profil:", err));
 
-      // Avatar
       const imageUrl = `http://localhost:5000/avatars/${user}.jpg`;
       fetch(imageUrl)
         .then((res) => {
@@ -79,7 +75,6 @@ const Profil = () => {
         })
         .catch(() => setSelectedImage("/images/default-avatar.jpg"));
 
-      // XP & Coins
       axios
         .get(`http://localhost:5000/api/user-stats/${user}`)
         .then((res) => {
@@ -89,6 +84,13 @@ const Profil = () => {
           }
         })
         .catch((err) => console.log("Eroare la fetch XP/coins:", err));
+
+      axios.get("http://localhost:5000/api/grades")
+        .then(res => {
+          const filtered = res.data.filter(g => g.USERNAME === user);
+          setGrades(filtered);
+        })
+        .catch(err => console.error("Eroare la preluarea notelor:", err));
     }
   }, []);
 
@@ -116,61 +118,15 @@ const Profil = () => {
         english_level: newLevel,
       });
       setEnglishLevel(newLevel);
-      setSelectedLabel(label); // Se setează doar la click, deci activ doar butonul apăsat
+      setSelectedLabel(label);
     } catch (err) {
       console.error("❌ Eroare la actualizarea nivelului:", err);
     }
   };
 
-  const goToEdit = () => {
-    navigate("/editare-profil");
-  };
-
-  const handleFileChange = async (event) => {
-    const file = event.target.files[0];
-    if (!file) return;
-
-    const formData = new FormData();
-    formData.append("image", file);
-
-    try {
-      const response = await axios.post(
-        `http://localhost:5000/upload-avatar?username=${username}`,
-        formData,
-        {
-          headers: { "Content-Type": "multipart/form-data" },
-        }
-      );
-
-      const filename = response.data.filename;
-      setSelectedImage(`http://localhost:5000/avatars/${filename}?t=${Date.now()}`);
-    } catch (err) {
-      console.error("❌ Eroare la upload:", err);
-    }
-  };
-
-  const handleRecommendation = async () => {
-    try {
-      const res = await axios.post("http://localhost:5000/api/recommend-level", { username });
-      const recommendedLevel = res.data.level;
-
-      if (recommendedLevel) {
-        setLevel(recommendedLevel);
-
-        const label = recommendedLevel.startsWith("A") ? "usor"
-                   : recommendedLevel.startsWith("B") ? "mediu"
-                   : "avansat";
-
-        setSelectedLabel(label);
-
-        alert(`🔍 Nivelul recomandat este ${recommendedLevel} (${label})`);
-      } else {
-        alert("⚠️ Nu s-a putut recomanda un nivel.");
-      }
-    } catch (err) {
-      console.error("❌ Eroare la recomandare:", err);
-      alert("A apărut o eroare la recomandarea nivelului.");
-    }
+  const handleLogout = () => {
+    localStorage.removeItem("token");
+    navigate("/");
   };
 
   const fetchRecommendedLevel = async () => {
@@ -196,27 +152,44 @@ const Profil = () => {
       setIsLoading(false);
     }
   };
+  const handleFileChange = async (event) => {
+  const file = event.target.files[0];
+  if (!file) return;
+
+  const formData = new FormData();
+  formData.append("image", file);
+
+  try {
+    const response = await axios.post(
+      `http://localhost:5000/upload-avatar?username=${username}`,
+      formData,
+      {
+        headers: { "Content-Type": "multipart/form-data" },
+      }
+    );
+
+    const filename = response.data.filename;
+    setSelectedImage(`http://localhost:5000/avatars/${filename}?t=${Date.now()}`);
+  } catch (err) {
+    console.error("❌ Eroare la upload:", err);
+  }
+};
+
 
   return (
     <div className="dashboard-container">
       <aside className="sidebar">
         <h2 className="sidebar-title">E-Learning</h2>
         <ul className="sidebar-menu">
-          <li onClick={() => navigate("/chapters")}>📖 Capitole</li>
-          <li onClick={() => navigate("/notebook")}>📓 Notițe</li>
-          <li onClick={() => navigate("/dictionary")}>📘 Dicționar</li>
-          <li
-            onClick={() => navigate("/ai")}
-            style={{ display: "flex", alignItems: "center", gap: "8px", cursor: "pointer" }}
-          >
-            <img
-              src="/images/bot.png"
-              alt="AI"
-              style={{ width: "33px", height: "30px", marginLeft: "-7px" }}
-            />
-            AI
-          </li>
-          <li onClick={() => navigate("/profil")}>⚙️ PROFIL</li>
+           <li onClick={() => navigate("/chapters")}>📖 Capitole</li>
+            <li onClick={() => navigate("/notebook")}>📓 Notițe</li>
+            <li onClick={() => navigate("/dictionary")}>📘 Dicționar</li>
+            <li onClick={() => navigate("/ai")} style={{ display: "flex", alignItems: "center", gap: "8px", cursor: "pointer" }}>
+              <img src="/images/bot.png" alt="AI" style={{ width: "33px", height: "30px", marginLeft: "-7px" }} />
+              AI
+            </li>
+            <li onClick={() => navigate("/profil")}>⚙️ PROFIL</li>
+            <li onClick={() => navigate("/teste")}>📝 Teste</li>
         </ul>
       </aside>
 
@@ -244,15 +217,9 @@ const Profil = () => {
           />
           <div className="info-profil">
             <h3 className="nameprofile_in_profile_page">{name}</h3>
-            <p>
-              <strong>Email:</strong> {email}
-            </p>
-            <p>
-              <strong>Membru din:</strong> {joinedAt}
-            </p>
-            <p>
-              <strong>XP:</strong> {xp}
-            </p>
+            <p><strong>Email:</strong> {email}</p>
+            <p><strong>Membru din:</strong> {joinedAt}</p>
+            <p><strong>XP:</strong> {xp}</p>
             <p style={{ display: "flex", alignItems: "center", gap: "6px", margin: 0 }}>
               <img src="/images/coin.png" alt="coin" style={{ width: "18px", height: "18px" }} />
               {coins}
@@ -260,10 +227,10 @@ const Profil = () => {
             <div className="english-level-section">
               <p className="level-label">Alege nivelul de engleză:</p>
               <div className="switch-buttons">
-                {["usor", "mediu", "avansat"].map((label) => (
+                {['usor', 'mediu', 'avansat'].map(label => (
                   <button
                     key={label}
-                    className={`level-btn ${selectedLabel === label ? "active" : ""}`}
+                    className={`level-btn ${selectedLabel === label ? 'active' : ''}`}
                     onClick={() => handleChangeEnglishLevel(label)}
                   >
                     {label.charAt(0).toUpperCase() + label.slice(1)}
@@ -277,7 +244,6 @@ const Profil = () => {
                 📈 Recomandă nivel
                 {isLoading && <span className="loader" />}
               </button>
-
               {!isLoading && recommendedLevel && (
                 <div className="recommended-result">
                   Recomandat: <strong>{recommendedLevel}</strong> {rawLevel && ``}
@@ -285,14 +251,33 @@ const Profil = () => {
               )}
             </div>
           </div>
+
           <div className="buttons-reset-edit">
             <button onClick={handleResetProgress} className="reset-button">
               Resetează progresul
             </button>
-            {/* <button onClick={goToEdit} className="edit-button">
-            ✏️ Editează profil
-          </button> */}
+            
+            <button onClick={() => setShowCatalog(!showCatalog)} className="catalog-toggle">
+              📑 Vezi catalogul
+            </button>
+            <button onClick={handleLogout} className="logout-button">
+              🚪 Deconectare
+            </button>
           </div>
+
+          {showCatalog && grades.length > 0 && (
+            <div className="catalog-section">
+              <h4>🗂️ Catalogul tău:</h4>
+              <ul className="catalog-list">
+                {grades.map((g, i) => (
+                  <li key={i}>
+                    <span>{g.TEST_FILENAME.replace(`${username}_`, "")}</span> — <strong>{g.GRADE}</strong>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          )}
+
         </div>
       </div>
     </div>

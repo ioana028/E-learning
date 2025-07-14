@@ -1333,3 +1333,124 @@ app.get("/api/user-profile/:username", async (req, res) => {
     }
   }
 });
+
+
+
+
+
+///TESTE
+app.get("/api/tests", (req, res) => {
+  const fs = require("fs");
+  const dir = "./uploads/tests/";
+
+  fs.readdir(dir, (err, files) => {
+    if (err) return res.status(500).json({ error: "Could not list files" });
+    const testList = files.map((filename) => ({
+      name: filename.split(".")[0],
+      filename,
+    }));
+    res.json(testList);
+  });
+});
+
+// const multer = require("multer");
+const uploadResolved = multer({ dest: "uploads/resolved/" });
+
+app.post("/api/upload-resolved/:username/:testName", uploadResolved.single("pdf"), (req, res) => {
+  const fs = require("fs");
+  const path = require("path");
+  const { username, testName } = req.params;
+
+  const newFilename = `${username}_${testName}`;
+  const dest = path.join("uploads/resolved", newFilename);
+
+  fs.rename(req.file.path, dest, (err) => {
+    if (err) return res.status(500).json({ error: "Failed to move file" });
+    res.json({ success: true });
+  });
+});
+
+app.get("/api/uploads/:username", (req, res) => {
+  const fs = require("fs");
+  const path = require("path");
+  const { username } = req.params;
+
+  fs.readdir("uploads/resolved", (err, files) => {
+    if (err) return res.status(500).json({ error: "Cannot read resolved folder" });
+    const uploaded = {};
+    files.forEach((file) => {
+      if (file.startsWith(username + "_")) {
+        const testName = file.replace(username + "_", "");
+        uploaded[testName] = true;
+      }
+    });
+    res.json(uploaded); // ex: { "test1.pdf": true, "test2.pdf": true }
+  });
+});
+
+app.post("/api/save-grade", async (req, res) => {
+  const { username, testFilename, grade } = req.body;
+  let connection;
+
+  try {
+    connection = await oracledb.getConnection(dbConfig);
+    await connection.execute(
+      `MERGE INTO user_test_grades g
+       USING DUAL ON (g.username = :username AND g.test_filename = :testFilename)
+       WHEN MATCHED THEN
+         UPDATE SET grade = :grade, graded_at = SYSDATE
+       WHEN NOT MATCHED THEN
+         INSERT (username, test_filename, grade)
+         VALUES (:username, :testFilename, :grade)`,
+      { username, testFilename, grade }
+    );
+    await connection.commit();
+    res.json({ success: true });
+  } catch (err) {
+    console.error("Eroare la salvare notă:", err);
+
+    res.status(500).json({ success: false, message: "Eroare la salvarea notei." });
+
+  } finally {
+    if (connection) await connection.close();
+  }
+});
+
+app.use("/uploads/resolved", express.static(path.join(__dirname, "uploads/resolved")));
+
+app.get("/api/grades", async (req, res) => {
+  try {
+    const connection = await oracledb.getConnection(dbConfig);
+    const result = await connection.execute(
+      `SELECT username, test_filename, grade FROM user_test_grades`,
+      [],
+      { outFormat: oracledb.OUT_FORMAT_OBJECT }
+    );
+    res.json(result.rows);
+  } catch (err) {
+    console.error("Eroare la GET grades:", err);
+    res.status(500).json({ error: "Eroare la interogare note" });
+  }
+});
+
+
+app.get("/api/uploads-all", async (req, res) => {
+  const fs = require("fs");
+  const path = require("path");
+
+  const dir = path.join(__dirname, "uploads/resolved");
+  const grouped = {};
+
+  fs.readdir(dir, (err, files) => {
+    if (err) return res.status(500).json({ error: "Eroare la listarea fișierelor" });
+
+    files.forEach((file) => {
+      const [username] = file.split("_");
+      if (!grouped[username]) grouped[username] = [];
+      grouped[username].push(file);
+    });
+
+    res.json(grouped);
+  });
+});
+

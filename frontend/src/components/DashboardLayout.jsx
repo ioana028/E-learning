@@ -5,6 +5,7 @@ import axios from "axios";
 import { jwtDecode } from "jwt-decode";
 import "./DashboardLayout.css"; // nou css pentru layout general
 
+
 const DashboardLayout = ({ children, showBack = true }) => {
   const navigate = useNavigate();
 
@@ -89,13 +90,14 @@ const DashboardLayout = ({ children, showBack = true }) => {
         <h2 className="sidebar-title">E-Learning</h2>
         <ul className="sidebar-menu">
           <li onClick={() => navigate("/chapters")}>📖 Capitole</li>
-          <li onClick={() => navigate("/notebook")}>📓 Notițe</li>
-          <li onClick={() => navigate("/dictionary")}>📘 Dicționar</li> {/* înlocuiește Exersare */}
-          <li onClick={() => navigate("/ai")} style={{ display: "flex", alignItems: "center", gap: "8px", cursor: "pointer" }}>
-            <img src="/images/bot.png" alt="AI" style={{ width: "33px", height: "30px", marginLeft: "-7px" }} />
-            AI
-          </li>
-          <li onClick={() => navigate("/profil")}>⚙️ Profil</li>
+            <li onClick={() => navigate("/notebook")}>📓 Notițe</li>
+            <li onClick={() => navigate("/dictionary")}>📘 Dicționar</li>
+            <li onClick={() => navigate("/ai")} style={{ display: "flex", alignItems: "center", gap: "8px", cursor: "pointer" }}>
+              <img src="/images/bot.png" alt="AI" style={{ width: "33px", height: "30px", marginLeft: "-7px" }} />
+              AI
+            </li>
+            <li onClick={() => navigate("/profil")}>⚙️ PROFIL</li>
+            <li onClick={() => navigate("/teste")}>📝 Teste</li>
         </ul>
 
       </aside>

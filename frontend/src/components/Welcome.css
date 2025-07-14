@@ -79,11 +79,11 @@ body {
   }
   
   .go-to-login-button:hover {
-    background: #efb540;
+    /* background: #efb540;
     width: 60%;
     
     transition: all 1s ease;
-    transition: scale(1.2);
+    transition: scale(1.2); */
   }
   
   /* Buton Înregistrare */
@@ -102,9 +102,9 @@ body {
   }
   
   .go-to-register-button:hover {
-    width: 40%;
+    /* width: 40%;
     
     transition: all 1s ease;
-    background: #efb540;
+    background: #efb540; */
   }
   

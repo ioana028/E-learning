@@ -95,7 +95,7 @@ export const askAI = async (prompt, abortSignal) => {
       const topic = top.TOPIC || top.topic;
       const count = top.COUNT || top.count;
 
-      return `🔁 Ar fi bine să repeți topicul **"${topic}"** – ai avut ${count} greșeli acolo.`;
+      return ` Ar fi bine să repeți topicul **"${topic}"** – ai avut ${count} greșeli acolo.`;
     } catch (error) {
       console.error("Eroare la recomandarea topicului de repetat:", error);
       return "❌ Nu am putut determina ce ar trebui să repeți.";

@@ -1,6 +1,6 @@
 .profil-page {
   
-  margin-top: 120px;
+   margin-top: 120px;
   padding: 0px;
   margin-left: 0px;
   flex: 1;
@@ -8,6 +8,12 @@
   flex-direction: column;
   align-items: center;
   transform: translateX(60px);
+
+  /* 🔽 Adăugat pentru scroll */
+  max-height: calc(100vh - 120px);
+  overflow-y: auto;
+  padding-top: 30px;
+  padding-bottom: 50px;
   
 }
 
@@ -253,4 +259,63 @@ padding: 0px;
   to {
     transform: rotate(360deg);
   }
+}
+
+.logout-button {
+  width: 100%;
+    padding: 10px;
+    background-color: #c4a484;
+    color: #fff9ec;
+    border: none;
+    border-radius: 8px;
+    font-size: 14px;
+    font-weight: bold;
+    cursor: pointer;
+    transition: background 0.3s;
+    margin: 20px;
+    height: 50px;
+    width: 300px;
+}
+
+.logout-button:hover {
+  background-color: #c0392b;
+}
+
+
+.catalog-section {
+  margin-top: 20px;
+  background-color: #f5f5f5;
+  padding: 15px;
+  border-radius: 10px;
+}
+
+.catalog-section h4 {
+  margin-bottom: 10px;
+}
+
+.catalog-list {
+  list-style: none;
+  padding-left: 0;
+}
+
+.catalog-list li {
+  padding: 4px 0;
+  border-bottom: 1px solid #ddd;
+}
+
+
+.logout-button{
+  width: 100%;
+    padding: 10px;
+    background-color: #c4a484;
+    color: #fff9ec;
+    border: none;
+    border-radius: 8px;
+    font-size: 14px;
+    font-weight: bold;
+    cursor: pointer;
+    transition: background 0.3s;
+    margin: 20px;
+    height: 50px;
+    width: 300px;
 }
