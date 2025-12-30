@@ -55,7 +55,7 @@ const dbConfig = {
   password: "your_password",
   connectString: "host:port/database_service"
 };
-
+```
 
 🏗️ Running the Application (General Idea)
 
