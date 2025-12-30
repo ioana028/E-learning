@@ -82,5 +82,4 @@ As a result, some sensitive values (API keys, database credentials) were hard-co
 They have been removed or revoked, but please be aware that the project reflects an early stage of my learning process.
 
 
-
------------------------------------------------------------------Have fun exploring the code, and thank you for taking a look!---------------------------------------------------------------------------
+---------------------------Have fun exploring the code, and thank you for taking a look!----------------------------
